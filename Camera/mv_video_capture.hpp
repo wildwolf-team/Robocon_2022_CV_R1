@@ -24,6 +24,8 @@ namespace mindvision {
 
 enum EXPOSURETIME {
   // 相机曝光时间
+  EXPOSURE_10000 = 10000,
+  EXPOSURE_7500 = 7500,
   EXPOSURE_5000 = 5000,
   EXPOSURE_2500 = 2500,
   EXPOSURE_1200 = 1200,

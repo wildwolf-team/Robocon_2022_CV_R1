@@ -7,7 +7,7 @@ int main()
 {
     mindvision::CameraParam CameraParams = mindvision::CameraParam(0,
                                                                  mindvision::RESOLUTION_1280_X_800,
-                                                                 mindvision::EXPOSURE_5000);
+                                                                 mindvision::EXPOSURE_10000);
     mindvision::VideoCapture *mv_capture_ = new mindvision::VideoCapture(CameraParams);
     
     cv::Mat src_img_;
