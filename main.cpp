@@ -4,6 +4,7 @@
 #include "Camera/mv_video_capture.hpp"
 #include "TensorRTx/yolov5.hpp"
 #include "angle_solve/basic_pnp.hpp"
+#include "serial/uart_serial.hpp"
 #include <fmt/color.h>
 #include <fmt/core.h>
 
@@ -24,6 +25,9 @@ int main()
     fmt::print("[{}] WolfVision config file path: {}\n", idntifier, "/home/sweetdeath/Code/Robocon_2022_CV/configs");
     basic_pnp::PnP pnp = basic_pnp::PnP(
         fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/camera_273.xml"), fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
+
+    uart::SerialPort serial_ = uart::SerialPort(
+        fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/uart_serial_config.xml"));
 
     while (mv_capture_->isindustryimgInput())
     {

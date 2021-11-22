@@ -30,6 +30,11 @@ add_subdirectory(angle_solve)
 include_directories(angle_solve)
 target_link_libraries(Robocon_2022_CV angle_solve)
 
+#Uart
+add_subdirectory(serial)
+include_directories(serial)
+target_link_libraries(Robocon_2022_CV serial)
+
 #TensorRTx
 find_package(CUDA REQUIRED)
 
