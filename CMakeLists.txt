@@ -25,6 +25,12 @@ add_subdirectory(Camera)
 include_directories(Camera)
 target_link_libraries(Robocon_2022_CV Camera)
 
+#angle_solve
+add_subdirectory(angle_solve)
+include_directories(angle_solve)
+target_link_libraries(Robocon_2022_CV angle_solve)
+
+#TensorRTx
 find_package(CUDA REQUIRED)
 
 # include and link dirs of cuda and tensorrt, you need adapt them if yours are different
