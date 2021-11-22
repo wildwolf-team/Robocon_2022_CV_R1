@@ -43,20 +43,15 @@ int main()
                 max_conf_res_id = i;
             }
         }
-        // 绘制 矩形(rectangle) 和 类编号(class_id)
-        // for (size_t j = 0; j < kResAfterFilter.size(); j++)
-        // {
+
+        //画出最佳矩形
         if (max_conf_res_id != -1)
         {
-        
             cv::RotatedRect rotate_res(cv::Point2f(res[max_conf_res_id].bbox[0],res[max_conf_res_id].bbox[1]),cv::Point2f(res[max_conf_res_id].bbox[1],res[max_conf_res_id].bbox[3]), 0);
             pnp.solvePnP(30, 0, rotate_res);
 
-            // res.size() 该图检测到多少个class
-            // cv::Rect r = get_rect(src_img_, kResAfterFilter[j].bbox);
             cv::Rect r = get_rect(src_img_,res[max_conf_res_id].bbox);
             cv::rectangle(src_img_, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
-            // cv::putText(src_img_, std::to_string((int)kResAfterFilter[j].class_id) + ":" + std::to_string(kResAfterFilter[j].conf), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
             cv::putText(src_img_, std::to_string(pnp.returnDepth()), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
         }
 
