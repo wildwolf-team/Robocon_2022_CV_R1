@@ -1,6 +1,4 @@
-include_directories(./)
-include_directories(mindvision/include)
-add_library (Camera mv_video_capture.cpp)
+add_library(Camera mv_video_capture.cpp)
 
 #fmt
 find_package(fmt REQUIRED)
