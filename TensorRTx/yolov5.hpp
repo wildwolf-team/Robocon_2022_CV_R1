@@ -156,7 +156,7 @@ std::vector<Yolo::Detection> yolov5_v5_Rtx_start(cv::Mat img) {
     auto start = std::chrono::system_clock::now();
     doInference(*context, stream, (void**)buffers, prob, BATCH_SIZE);
     auto end = std::chrono::system_clock::now();
-    std::cout << "inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+    // std::cout << "inference time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
     std::vector<std::vector<Yolo::Detection>> batch_res(1);
     // GG
