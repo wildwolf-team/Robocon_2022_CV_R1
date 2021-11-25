@@ -26,11 +26,12 @@ int main()
     basic_pnp::PnP pnp = basic_pnp::PnP(
         fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/camera_273.xml"), fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
 
-    uart::SerialPort serial_ = uart::SerialPort(
+    uart::SerialPort serial = uart::SerialPort(
         fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/uart_serial_config.xml"));
 
     while (mv_capture_->isindustryimgInput())
     {
+        serial.updateReceiveInformation();
         src_img_ = mv_capture_->image();
         auto res = yolov5_v5_Rtx_start(src_img_);
 
@@ -51,12 +52,19 @@ int main()
         //画出最佳矩形
         if (max_conf_res_id != -1)
         {
-            cv::RotatedRect rotate_res(cv::Point2f(res[max_conf_res_id].bbox[0],res[max_conf_res_id].bbox[1]),cv::Point2f(res[max_conf_res_id].bbox[1],res[max_conf_res_id].bbox[3]), 0);
+            // serial.updateReceiveInformation();
+            cv::RotatedRect rotate_res(cv::Point2f(res[max_conf_res_id].bbox[0],res[max_conf_res_id].bbox[1]),cv::Size2f(res[max_conf_res_id].bbox[2],res[max_conf_res_id].bbox[3]), 0);
             pnp.solvePnP(30, 0, rotate_res);
+            std::cout << "yaw:" << pnp.returnYawAngle() << "  pitch:" << pnp.returnPitchAngle() << std::endl;
+            serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 1, 0);
 
-            cv::Rect r = get_rect(src_img_,res[max_conf_res_id].bbox);
-            cv::rectangle(src_img_, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
-            cv::putText(src_img_, std::to_string(pnp.returnDepth()), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
+            cv::Rect rect = get_rect(src_img_,res[max_conf_res_id].bbox);
+            cv::rectangle(src_img_, rect, cv::Scalar(0x27, 0xC1, 0x36), 2);
+            cv::putText(src_img_, std::to_string(pnp.returnDepth()), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
+        }
+        else
+        {
+            serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 0, 0);
         }
 
         if (!src_img_.empty())
