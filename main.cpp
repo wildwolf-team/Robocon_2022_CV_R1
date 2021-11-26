@@ -16,7 +16,7 @@ int main()
     CameraParams.camera_exposuretime = 14000;
     mindvision::VideoCapture *mv_capture_ = new mindvision::VideoCapture(CameraParams);
     
-    std::string engine_path = "/home/sweetdeath/Code/Robocon_2022_CV/models.engine";
+    std::string engine_path = "/home/sweetdeath/Code/Dataset/Models/RCBall3.engine";
     start(engine_path);
 
     cv::Mat src_img_;
@@ -25,6 +25,8 @@ int main()
     fmt::print("[{}] WolfVision config file path: {}\n", idntifier, "/home/sweetdeath/Code/Robocon_2022_CV/configs");
     basic_pnp::PnP pnp = basic_pnp::PnP(
         fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/camera_273.xml"), fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
+    // basic_pnp::PnP pnp = basic_pnp::PnP(
+        // fmt::format("{}{}", "/home/sweetdeath/Downloads", "/camera511.xml"), fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
 
     uart::SerialPort serial = uart::SerialPort(
         fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/uart_serial_config.xml"));
@@ -53,12 +55,17 @@ int main()
         if (max_conf_res_id != -1)
         {
             // serial.updateReceiveInformation();
-            cv::RotatedRect rotate_res(cv::Point2f(res[max_conf_res_id].bbox[0],res[max_conf_res_id].bbox[1]),cv::Size2f(res[max_conf_res_id].bbox[2],res[max_conf_res_id].bbox[3]), 0);
-            pnp.solvePnP(30, 0, rotate_res);
-            std::cout << "yaw:" << pnp.returnYawAngle() << "  pitch:" << pnp.returnPitchAngle() << std::endl;
-            serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 1, 0);
-
+            // cv::RotatedRect rotate_res(cv::Point2f(res[max_conf_res_id].bbox[0],res[max_conf_res_id].bbox[1]),cv::Size2f(res[max_conf_res_id].bbox[2],res[max_conf_res_id].bbox[3]), 0);
+            // cv::Rect rect_res(res[max_conf_res_id].bbox[0], res[max_conf_res_id].bbox[1], res[max_conf_res_id].bbox[2], res[max_conf_res_id].bbox[3]);
             cv::Rect rect = get_rect(src_img_,res[max_conf_res_id].bbox);
+            // pnp.solvePnP(30, 0, rotate_res);
+            pnp.solvePnP(30, 0, rect);
+            // std::cout << "rect x:" << rect.x << "rect y:" << rect.y << std::endl;
+            // std::cout << "rect width:" << rect.width << "rect height:" << rect.height << std::endl;
+            // std::cout << "yaw:" << pnp.returnYawAngle() << "  pitch:" << -pnp.returnPitchAngle() << std::endl;
+            //To-Do: PNP 解算 Pitch 轴数据相反，中心线不在相机正中心
+            serial.updataWriteData(pnp.returnYawAngle(), -pnp.returnPitchAngle(), pnp.returnDepth(), 1, 0);
+
             cv::rectangle(src_img_, rect, cv::Scalar(0x27, 0xC1, 0x36), 2);
             cv::putText(src_img_, std::to_string(pnp.returnDepth()), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
         }
