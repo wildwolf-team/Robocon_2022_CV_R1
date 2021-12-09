@@ -364,7 +364,7 @@ class PnP {
     angle.x  = static_cast<float>(angle.x) * 180 / CV_PI;
     // Pitch
     angle.y  = static_cast<float>(angle.y) * 180 / CV_PI;
-    // angle.y -= getPitch(xyz[2], xyz[1], _bullet_speed * 1000, _company); //去除子弹补偿
+    angle.y -= getPitch(xyz[2], xyz[1], _bullet_speed * 1000, _company);
 
     return angle;
   }
