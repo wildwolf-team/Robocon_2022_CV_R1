@@ -188,6 +188,10 @@ void SerialPort::writeData() {
             write_data_.depth,
             write_data_.data_type,
             write_data_.is_shooting);
+
+  int count = 0;
+  if (-1 == ioctl (fd, 0x541B, &count)) 
+    fmt::print("[{}] Serial not available.\n", idntifier_red);
 }
 
 void SerialPort::updataWriteData(const float _yaw,

@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 #include <fmt/core.h>
 #include <fmt/color.h>
