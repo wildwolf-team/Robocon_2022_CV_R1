@@ -1,85 +1,86 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include <fmt/color.h>
+#include <fmt/core.h>
 
 #include "Camera/mv_video_capture.hpp"
 #include "TensorRTx/yolov5.hpp"
 #include "angle_solve/basic_pnp.hpp"
 #include "serial/uart_serial.hpp"
-#include <fmt/color.h>
-#include <fmt/core.h>
 
-int main()
+//对矩形的长宽比进行筛选，提取出最佳矩形
+cv::Rect FilterRect(std::vector<Yolo::Detection> res, cv::Mat img)
+{
+    float max_conf = .0;
+    int max_conf_res_id = -1;
+    for (size_t i = 0; i < res.size(); i++)
+    {
+        if (0.8 > res[i].bbox[2] / res[i].bbox[3] && res[i].bbox[2] / res[i].bbox[3] > 1.2)
+            continue;
+        if (res[i].conf > max_conf)
+        {
+            max_conf = res[i].conf;
+            max_conf_res_id = i;
+        }
+    }
+    return get_rect(img, res[max_conf_res_id].bbox);
+}
+
+int main(int argc, char *argv[])
 {
     mindvision::CameraParam CameraParams = mindvision::CameraParam(0,
-                                                                 mindvision::RESOLUTION_1280_X_800,
-                                                                 mindvision::EXPOSURE_10000);
-    CameraParams.camera_exposuretime = 14000;
-    mindvision::VideoCapture *mv_capture_ = new mindvision::VideoCapture(CameraParams);
-    
+                                                                   mindvision::RESOLUTION_1280_X_800,
+                                                                   mindvision::EXPOSURE_10000);
+    CameraParams.camera_exposuretime = 20000;
+    mindvision::VideoCapture mv_capture_ = mindvision::VideoCapture(CameraParams);
+
     std::string engine_path = "/home/sweetdeath/Code/Dataset/Models/RCBall3.engine";
     start(engine_path);
 
     cv::Mat src_img_;
 
-    auto idntifier = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "wolfvision");
-    fmt::print("[{}] WolfVision config file path: {}\n", idntifier, "/home/sweetdeath/Code/Robocon_2022_CV/configs");
     basic_pnp::PnP pnp = basic_pnp::PnP(
-        fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/camera_273.xml"), fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
-    // basic_pnp::PnP pnp = basic_pnp::PnP(
-        // fmt::format("{}{}", "/home/sweetdeath/Downloads", "/camera511.xml"), fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
-
+        fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/camera_273.xml"), fmt::format("{}{}",
+                                                                                                             "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
     uart::SerialPort serial = uart::SerialPort(
         fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/uart_serial_config.xml"));
 
-    while (mv_capture_->isindustryimgInput())
+    while (mv_capture_.isindustryimgInput())
     {
-        serial.updateReceiveInformation();
-        src_img_ = mv_capture_->image();
-        auto res = yolov5_v5_Rtx_start(src_img_);
-
-        //对矩形的长宽比进行筛选，提取出最佳矩形
-        float max_conf = .0;
-        int max_conf_res_id = -1;
-        for (size_t i = 0; i < res.size(); i++)
-        {
-            if(0.8 > res[i].bbox[2]/res[i].bbox[3] && res[i].bbox[2]/res[i].bbox[3] > 1.2)
-                continue;
-            if (res[i].conf > max_conf)
-            {
-                max_conf = res[i].conf;
-                max_conf_res_id = i;
-            }
-        }
-
-        //画出最佳矩形
-        if (max_conf_res_id != -1)
-        {
-            // serial.updateReceiveInformation();
-            // cv::RotatedRect rotate_res(cv::Point2f(res[max_conf_res_id].bbox[0],res[max_conf_res_id].bbox[1]),cv::Size2f(res[max_conf_res_id].bbox[2],res[max_conf_res_id].bbox[3]), 0);
-            // cv::Rect rect_res(res[max_conf_res_id].bbox[0], res[max_conf_res_id].bbox[1], res[max_conf_res_id].bbox[2], res[max_conf_res_id].bbox[3]);
-            cv::Rect rect = get_rect(src_img_,res[max_conf_res_id].bbox);
-            // pnp.solvePnP(30, 0, rotate_res);
-            pnp.solvePnP(30, 0, rect);
-            // std::cout << "rect x:" << rect.x << "rect y:" << rect.y << std::endl;
-            // std::cout << "rect width:" << rect.width << "rect height:" << rect.height << std::endl;
-            // std::cout << "yaw:" << pnp.returnYawAngle() << "  pitch:" << -pnp.returnPitchAngle() << std::endl;
-            //To-Do: PNP 解算 Pitch 轴数据相反，中心线不在相机正中心
-            serial.updataWriteData(pnp.returnYawAngle(), -pnp.returnPitchAngle(), pnp.returnDepth(), 1, 0);
-
-            cv::rectangle(src_img_, rect, cv::Scalar(0x27, 0xC1, 0x36), 2);
-            cv::putText(src_img_, std::to_string(pnp.returnDepth()), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
-        }
-        else
-        {
-            serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 0, 0);
-        }
-
-        if (!src_img_.empty())
-            cv::imshow("img", src_img_);
         if (cv::waitKey(1) == 'q')
             break;
-        mv_capture_->cameraReleasebuff();
-    }
+        mv_capture_.cameraReleasebuff();
+        serial.updateReceiveInformation();
+        src_img_ = mv_capture_.image();
+        if (!src_img_.empty() && std::string(argv[1]) == "-d")
+            cv::imshow("img", src_img_);
+        auto res = yolov5_v5_Rtx_start(src_img_);
+        if (res.empty())
+        {
+            fmt::print("res empty.\n");
+            continue;
+        }
 
+        cv::Rect rect = FilterRect(res, src_img_);
+        if (rect.empty())
+        {
+            serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 0, 0);
+            fmt::print("res after filter is empty.\n");
+            continue;
+        }
+
+        pnp.solvePnP(30, 0, rect);
+        serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 1, 0);
+
+        if (std::string(argv[1]) == "-d")
+        {
+            cv::rectangle(src_img_, rect, cv::Scalar(0x27, 0xC1, 0x36), 2);
+            cv::putText(src_img_, std::to_string(pnp.returnDepth()), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
+            fmt::format("rect x:{}, rect y:{} \n", rect.x, rect.y);
+            fmt::format("rect width:{}, rect height:{} \n", rect.width, rect.height);
+            fmt::format("yaw:{}, pitch:{} \n", pnp.returnYawAngle(), pnp.returnPitchAngle());
+            cv::imshow("img", src_img_);
+        }
+    }
     return 0;
 }

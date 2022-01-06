@@ -11,6 +11,9 @@
 
 namespace mindvision {
 
+auto idntifier_green = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "mv_video_capture");
+auto idntifier_red   = fmt::format(fg(fmt::color::red)   | fmt::emphasis::bold, "mv_video_capture");
+
 VideoCapture::VideoCapture(const CameraParam &_camera_param) {
   if (_camera_param.camera_mode == 0) {
     cameraInit(_camera_param.resolution.cols,
@@ -19,11 +22,11 @@ VideoCapture::VideoCapture(const CameraParam &_camera_param) {
 
     iscamera0_open = true;
 
-      // fmt::print("[{}] Using mindvision industrial camera: {}\n", idntifier_green, _camera_param.camera_mode);
+    fmt::print("[{}] Using mindvision industrial camera: {}\n", idntifier_green, _camera_param.camera_mode);
   } else {
     iscamera0_open = false;
 
-    // fmt::print("[{}] Not using mindvision industrial camera: {}\n", idntifier_green, _camera_param.camera_mode);
+    fmt::print("[{}] Not using mindvision industrial camera: {}\n", idntifier_green, _camera_param.camera_mode);
   }
 }
 
@@ -32,7 +35,7 @@ VideoCapture::~VideoCapture() {
     CameraUnInit(hCamera);
     free(g_pRgbBuffer);
 
-    // fmt::print("[{}] Released mindvision industrial camera: {}\n", idntifier_green, iStatus);
+    fmt::print("[{}] Released mindvision industrial camera: {}\n", idntifier_green, iStatus);
   }
 }
 
@@ -69,7 +72,7 @@ int VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
   iStatus = CameraEnumerateDevice(&tCameraEnumList, &iCameraCounts);
 
   if (iCameraCounts == 0) {
-    // fmt::print("[{}] Error, no mindvision industrial camera detected: {}\n", idntifier_red, iCameraCounts);
+    fmt::print("[{}] Error, no mindvision industrial camera detected: {}\n", idntifier_red, iCameraCounts);
 
     return -1;
   }
@@ -78,12 +81,12 @@ int VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
   iStatus = CameraInit(&tCameraEnumList, -1, -1, &hCamera);
 
   if (iStatus != CAMERA_STATUS_SUCCESS) {
-    // fmt::print("[{}] Error, Init mindvision industrial camera failed: {}\n", idntifier_red, iStatus);
+    fmt::print("[{}] Error, Init mindvision industrial camera failed: {}\n", idntifier_red, iStatus);
 
     return -1;
   }
 
-  // fmt::print("[{}] Info, Init mindvision industrial camera success: {}\n", idntifier_green, iStatus);
+  fmt::print("[{}] Info, Init mindvision industrial camera success: {}\n", idntifier_green, iStatus);
 
   CameraGetCapability(hCamera, &tCapability);
 
