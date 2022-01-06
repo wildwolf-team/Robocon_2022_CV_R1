@@ -51,8 +51,13 @@ int main(int argc, char *argv[])
         if (!src_img_.empty() && std::string(argv[1]) == "-d")
             cv::imshow("img", src_img_);
         auto res = yolov5_v5_Rtx_start(src_img_);
+
+        cv::line(src_img_, cv::Point(0, src_img_.rows / 2), cv::Point(src_img_.cols, src_img_.rows / 2), cv::Scalar(0, 0, 0xFF));
+        cv::line(src_img_, cv::Point(src_img_.cols / 2, 0), cv::Point(src_img_.cols / 2, src_img_.rows), cv::Scalar(0, 0, 0xFF));
+
         if (res.empty())
         {
+            serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 0, 0);
             fmt::print("res empty.\n");
             continue;
         }
