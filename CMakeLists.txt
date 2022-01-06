@@ -68,3 +68,8 @@ add_definitions(-O2 -pthread)
 endif(UNIX)
 
 target_link_libraries(Robocon_2022_CV TensorRTx)
+
+set(CONFIG_FILE_PATH ${PROJECT_SOURCE_DIR}/configs)
+set(SOURCE_PATH ${PROJECT_SOURCE_DIR})
+target_compile_definitions(Robocon_2022_CV PRIVATE "CONFIG_FILE_PATH=\"${CONFIG_FILE_PATH}\"")
+target_compile_definitions(Robocon_2022_CV PRIVATE "SOURCE_PATH=\"${PROJECT_SOURCE_DIR}\"")

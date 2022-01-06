@@ -33,16 +33,13 @@ int main(int argc, char *argv[])
                                                                    20000);
     mindvision::VideoCapture mv_capture_ = mindvision::VideoCapture(CameraParams);
 
-    std::string engine_path = "/home/sweetdeath/Code/Dataset/Models/RCBall3.engine";
-    start(engine_path);
+    start(fmt::format("{}{}", SOURCE_PATH, "/Models/RCBall3.engine"));
 
     cv::Mat src_img_;
 
-    basic_pnp::PnP pnp = basic_pnp::PnP(
-        fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/camera_273.xml"), fmt::format("{}{}",
-                                                                                                             "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/basic_pnp_config.xml"));
-    uart::SerialPort serial = uart::SerialPort(
-        fmt::format("{}{}", "/home/sweetdeath/Code/Robocon_2022_CV/configs", "/uart_serial_config.xml"));
+    basic_pnp::PnP pnp = basic_pnp::PnP(fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
+                                        fmt::format("{}{}", CONFIG_FILE_PATH, "/basic_pnp_config.xml"));
+    uart::SerialPort serial = uart::SerialPort(fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
 
     while (mv_capture_.isindustryimgInput())
     {

@@ -107,7 +107,7 @@ void destroy() {
 }
 
 // 构造函数
-int start(std::string& engine_name) {
+int start(std::string engine_name) {
     cudaSetDevice(DEVICE);
 
     // deserialize the .engine and run inference
