@@ -30,8 +30,7 @@ int main(int argc, char *argv[])
 {
     mindvision::CameraParam CameraParams = mindvision::CameraParam(0,
                                                                    mindvision::RESOLUTION_1280_X_800,
-                                                                   mindvision::EXPOSURE_10000);
-    CameraParams.camera_exposuretime = 20000;
+                                                                   20000);
     mindvision::VideoCapture mv_capture_ = mindvision::VideoCapture(CameraParams);
 
     std::string engine_path = "/home/sweetdeath/Code/Dataset/Models/RCBall3.engine";

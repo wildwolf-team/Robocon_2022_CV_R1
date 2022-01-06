@@ -75,7 +75,7 @@ struct CameraParam {
 
   CameraParam(const int                      _camera_mode,
               const mindvision::RESOLUTION   _resolution,
-              const mindvision::EXPOSURETIME _camera_exposuretime)
+              int _camera_exposuretime)
     : camera_mode(_camera_mode),
       camera_exposuretime(_camera_exposuretime),
       resolution(_resolution) {}
