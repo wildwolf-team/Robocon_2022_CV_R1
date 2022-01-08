@@ -1,1 +1,0 @@
-add_library(angle_solve basic_pnp.cpp)

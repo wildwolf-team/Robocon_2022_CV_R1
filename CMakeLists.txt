@@ -22,17 +22,14 @@ target_link_libraries(Robocon_2022_CV fmt::fmt)
 
 #Camera
 add_subdirectory(Camera)
-include_directories(Camera)
 target_link_libraries(Robocon_2022_CV Camera)
 
-#angle_solve
-add_subdirectory(angle_solve)
-include_directories(angle_solve)
-target_link_libraries(Robocon_2022_CV angle_solve)
+#solvePnP
+add_subdirectory(angle/solvePnP)
+# target_link_libraries(Robocon_2022_CV solvePnP)
 
 #Uart
 add_subdirectory(serial)
-include_directories(serial)
 target_link_libraries(Robocon_2022_CV serial)
 
 #TensorRTx
