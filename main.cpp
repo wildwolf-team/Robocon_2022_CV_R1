@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
 
     cv::Mat src_img_;
 
-    solvepnp::PnP pnp(fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"), fmt::format("{}{}",
-                                                                                            CONFIG_FILE_PATH, "/pnp_config.xml"));
+    solvepnp::PnP pnp(fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
+                      fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
     uart::SerialPort serial = uart::SerialPort(fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
 
     while (mv_capture_.isindustryimgInput())

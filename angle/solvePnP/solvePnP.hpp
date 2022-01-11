@@ -76,7 +76,6 @@ namespace solvepnp
 
             cv::Mat ptz = cameraPtz(tvec_);
             const double *xyz = reinterpret_cast<const double *>(ptz.data);
-            fmt::print("xyz0:{},xyz1:{},xyz2:{}", xyz[0], xyz[1], xyz[2]);
 
             // Yaw
             if (PnP_Config.barrel_ptz_offset_x != 0.f)
