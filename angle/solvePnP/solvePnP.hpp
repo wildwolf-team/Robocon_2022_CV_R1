@@ -104,8 +104,9 @@ namespace solvepnp
             else
             {
                 angle.x = static_cast<float>(atan2(xyz[0], xyz[2]));
-                angle.x += PnP_Config.offset_yaw;
             }
+            angle.x  = static_cast<float>(angle.x) * 180 / CV_PI;
+            angle.x += PnP_Config.offset_yaw;
 
             // Pitch
             if (PnP_Config.barrel_ptz_offset_y != 0.f)
@@ -138,7 +139,7 @@ namespace solvepnp
             angle.y += PnP_Config.offset_pitch;
 
             // Depth
-            angle.z = static_cast<float>(xyz[2]);
+            angle.z = static_cast<float>(sqrt(xyz[2] * xyz[2] + xyz[0] * xyz[0]));
 
             return angle;
         }

@@ -77,10 +77,9 @@ int main(int argc, char *argv[])
 
         cv::rectangle(src_img_, rect, cv::Scalar(0x27, 0xC1, 0x36), 2);
         cv::putText(src_img_, std::to_string(angle.z), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
-        fmt::print("rect x:{}, rect y:{} \n", rect.x, rect.y);
-        fmt::print("rect width:{}, rect height:{} \n", rect.width, rect.height);
         fmt::print("yaw:{}, pitch:{} \n", angle.x, angle.y);
         cv::imshow("img", src_img_);
+        fmt::print("-------next--------\n");
     }
     return 0;
 }
