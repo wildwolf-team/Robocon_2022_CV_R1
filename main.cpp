@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
         if (res.empty())
         {
-            // serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 0, 0);
+            // serial.updataWriteData(angle.y, angle.x, depth, 0, 0);
             fmt::print("res empty.\n");
             continue;
         }
@@ -65,19 +65,21 @@ int main(int argc, char *argv[])
         cv::Rect rect = FilterRect(res, src_img_);
         if (rect.empty())
         {
-            // serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 0, 0);
+            // serial.updataWriteData(angle.y, angle.x, depth, 0, 0);
             fmt::print("res after filter is empty.\n");
             continue;
         }
 
         rect.height = rect.width;
         cv::Rect ball_3d_rect(0, 0, 165, 165);
-        cv::Point3f angle = pnp.solvePnP(ball_3d_rect, rect);
-        // serial.updataWriteData(pnp.returnYawAngle(), pnp.returnPitchAngle(), pnp.returnDepth(), 1, 0);
+        cv::Point2f angle;
+        float depth;
+        pnp.solvePnP(ball_3d_rect, rect, angle, depth);
+        // serial.updataWriteData(angle.y, angle.x, depth, 1, 0);
 
         cv::rectangle(src_img_, rect, cv::Scalar(0x27, 0xC1, 0x36), 2);
-        cv::putText(src_img_, std::to_string(angle.z), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
-        fmt::print("yaw:{}, pitch:{} \n", angle.x, angle.y);
+        cv::putText(src_img_, std::to_string(depth), cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
+        fmt::print("pitch:{}, yaw:{} \n", angle.x, angle.y);
         cv::imshow("img", src_img_);
         fmt::print("-------next--------\n");
     }

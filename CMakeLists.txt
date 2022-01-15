@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Ofast -g -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED")
 
 add_executable(Robocon_2022_CV main.cpp)
+include_directories(${PROJECT_SOURCE_DIR})
 
 #OpenCV
 find_package(OpenCV REQUIRED)
@@ -25,7 +26,7 @@ add_subdirectory(Camera)
 target_link_libraries(Robocon_2022_CV Camera)
 
 #solvePnP
-add_subdirectory(angle/solvePnP)
+# add_subdirectory(angle/solvePnP)
 # target_link_libraries(Robocon_2022_CV solvePnP)
 
 #Uart

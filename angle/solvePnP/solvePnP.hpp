@@ -10,6 +10,62 @@ namespace solvepnp
     auto idntifier_green = fmt::format(fg(fmt::color::green), "solvePnP");
     auto idntifier_red = fmt::format(fg(fmt::color::red), "solvePnP");
 
+    /**
+     * @brief 桂林电子科技大学下坠补偿
+     * 
+     * @param coordinate_mm 世界坐标系, x 为 yaw 轴
+     * @param shoot_speed 射速
+     * @param pitch_angle 解算的 pitch 轴角度
+     */
+    void FallCompensator(cv::Point3f coordinate_mm, float shoot_speed, float &pitch_angle)
+    {
+        float KAPPA = 0.00045f; //空气阻力系数
+        float M = 0.21f;        //质量
+
+        float x = coordinate_mm.x / 1000.f;
+        float z = coordinate_mm.z / 1000.f;
+        float y = -coordinate_mm.y / 1000.f;
+        float speed = shoot_speed;
+        float pp = sqrt(x * x + z * z);
+        // float p = sqrt(x * x + z * z);
+        float A = sqrt(1 - 2 * pp * KAPPA / M);
+        float pitchAngleRef = 0.f; //pitch 补偿大小
+
+        #define GRAVITY 9.80565f
+        float a = -0.5 * GRAVITY * (M * (1 - A) / (KAPPA * speed)) * (M * (1 - A) / (KAPPA * speed));
+        float b = M * (1 - A) / KAPPA;
+        float c = a - y;
+        float delta = b * b - 4 * a * c;
+        float mid = -b / (2 * a);
+        float tanAngleA = 0;
+        float angleA = 0;
+        float tanAngleB = 0;
+        float angleB = 0;
+
+        if (delta < 0) {
+            pitchAngleRef = pitch_angle;
+        }
+        else if (delta == 0) {
+            tanAngleA = mid;
+            pitchAngleRef = atan(tanAngleA) * 180 / CV_PI;
+        }
+        else if (delta > 0) {
+
+            tanAngleA = mid - sqrt(delta) / (2 * a);
+            angleA = atanf(tanAngleA) * 180 / CV_PI;;
+            tanAngleB = mid + sqrt(delta) / (2 * a);
+            angleB = atan(tanAngleB) * 180 / CV_PI;
+
+            if (tanAngleA >= -1 && tanAngleA <= 1) {
+                pitchAngleRef = atanf(tanAngleA) * 180 / CV_PI;
+            }
+            else if (tanAngleB >= -1 && tanAngleB <= 1) {
+                pitchAngleRef = atan(tanAngleB) * 180 / CV_PI;
+            }
+        }
+        pitch_angle = pitchAngleRef;
+    }
+
     class PnP
     {
     public:
@@ -57,10 +113,13 @@ namespace solvepnp
          *
          * @param object_3d_ 目标的实际坐标
          * @param target_2d_ 目标的图像坐标
-         * @return cv::Point3f Yaw, Pitch, Depth
+         * @param angle Pitch Yaw
+         * @param depth 深度
          */
-        cv::Point3f solvePnP(std::vector<cv::Point3f> object_3d_,
-                             std::vector<cv::Point2f> target_2d_)
+        void solvePnP(const std::vector<cv::Point3f> object_3d_,
+                      const std::vector<cv::Point2f> target_2d_,
+                      cv::Point2f &angle,
+                      float &depth)
         {
             cv::Mat rvec_ = cv::Mat::zeros(3, 3, CV_64FC1);
             cv::Mat tvec_ = cv::Mat::zeros(3, 1, CV_64FC1);
@@ -72,7 +131,8 @@ namespace solvepnp
                          tvec_,
                          false,
                          cv::SOLVEPNP_SQPNP);
-            cv::Point3f angle;
+            float pitch_angle = 0.f;
+            float yaw_angle = 0.f;
 
             cv::Mat ptz = cameraPtz(tvec_);
             const double *xyz = reinterpret_cast<const double *>(ptz.data);
@@ -88,25 +148,26 @@ namespace solvepnp
                 if (xyz[0] > 0)
                 {
                     beta = atan(-xyz[0] / xyz[2]);
-                    angle.x = static_cast<float>(-(alpha + beta)); // camera coordinate
+                    yaw_angle = static_cast<float>(-(alpha + beta)); // camera coordinate
                 }
                 else if (xyz[0] < static_cast<double>(PnP_Config.barrel_ptz_offset_x))
                 {
                     beta = atan(xyz[0] / xyz[2]);
-                    angle.x = static_cast<float>(-(alpha - beta));
+                    yaw_angle = static_cast<float>(-(alpha - beta));
                 }
                 else
                 {
                     beta = atan(xyz[0] / xyz[2]);
-                    angle.x = static_cast<float>(beta - alpha); // camera coordinate
+                    yaw_angle = static_cast<float>(beta - alpha); // camera coordinate
                 }
             }
             else
             {
-                angle.x = static_cast<float>(atan2(xyz[0], xyz[2]));
+                yaw_angle = static_cast<float>(atan2(xyz[0], xyz[2]));
             }
-            angle.x  = static_cast<float>(angle.x) * 180 / CV_PI;
-            angle.x += PnP_Config.offset_yaw;
+            yaw_angle  = static_cast<float>(yaw_angle) * 180 / CV_PI;
+            yaw_angle += PnP_Config.offset_yaw;
+            angle.y = yaw_angle;
 
             // Pitch
             if (PnP_Config.barrel_ptz_offset_y != 0.f)
@@ -118,34 +179,36 @@ namespace solvepnp
                 if (xyz[1] < 0)
                 {
                     beta = atan(-xyz[1] / xyz[2]);
-                    angle.y = static_cast<float>(-(alpha + beta)); // camera coordinate
+                    pitch_angle = static_cast<float>(-(alpha + beta)); // camera coordinate
                 }
                 else if (xyz[1] < static_cast<double>(PnP_Config.barrel_ptz_offset_y))
                 {
                     beta = atan(xyz[1] / xyz[2]);
-                    angle.y = static_cast<float>(-(alpha - beta));
+                    pitch_angle = static_cast<float>(-(alpha - beta));
                 }
                 else
                 {
                     beta = atan(xyz[1] / xyz[2]);
-                    angle.y = static_cast<float>((beta - alpha)); // camera coordinate
+                    pitch_angle = static_cast<float>((beta - alpha)); // camera coordinate
                 }
             }
             else
             {
-                angle.y = static_cast<float>(atan2(xyz[1], xyz[2]));
+                pitch_angle = static_cast<float>(atan2(xyz[1], xyz[2]));
             }
-            angle.y = static_cast<float>(angle.y) * 180 / CV_PI;
-            angle.y += PnP_Config.offset_pitch;
+            pitch_angle = static_cast<float>(pitch_angle) * 180 / CV_PI;
+            pitch_angle += PnP_Config.offset_pitch;
+            angle.x = pitch_angle;
 
             // Depth
-            angle.z = static_cast<float>(sqrt(xyz[2] * xyz[2] + xyz[0] * xyz[0]));
-
-            return angle;
+            depth = static_cast<float>(sqrt(xyz[2] * xyz[2] + xyz[0] * xyz[0]));
+            FallCompensator(cv::Point3f(xyz[0], xyz[1], xyz[2]), 16.f, angle.x);
         }
 
-        cv::Point3f solvePnP(cv::Rect object_3d_rect,
-                             cv::Rect target_2d_rect_)
+        void solvePnP(const cv::Rect object_3d_rect,
+                      const cv::Rect target_2d_rect_,
+                      cv::Point2f &angle,
+                      float &depth)
         {
             std::vector<cv::Point3f> object_3d_;
             object_3d_.emplace_back(
@@ -167,8 +230,7 @@ namespace solvepnp
             target_2d_.emplace_back(cv::Point2f(target_2d_rect_.x + target_2d_rect_.width, target_2d_rect_.y));
             target_2d_.emplace_back(cv::Point2f(target_2d_rect_.x, target_2d_rect_.y));
 
-            cv::Point3f angle = this->solvePnP(object_3d_, target_2d_);
-            return angle;
+            this->solvePnP(object_3d_, target_2d_, angle, depth);
         }
 
     private:
