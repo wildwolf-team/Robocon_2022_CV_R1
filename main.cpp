@@ -83,5 +83,6 @@ int main(int argc, char *argv[])
         cv::imshow("img", src_img_);
         fmt::print("-------next--------\n");
     }
+    mv_capture_.cameraReleasebuff();
     return 0;
 }
