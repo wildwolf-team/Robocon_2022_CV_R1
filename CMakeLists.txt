@@ -22,7 +22,7 @@ find_package(fmt REQUIRED)
 target_link_libraries(Robocon_2022_CV fmt::fmt)
 
 #Camera
-add_subdirectory(Camera)
+add_subdirectory(devices/camera)
 target_link_libraries(Robocon_2022_CV Camera)
 
 #solvePnP
@@ -30,7 +30,7 @@ target_link_libraries(Robocon_2022_CV Camera)
 # target_link_libraries(Robocon_2022_CV solvePnP)
 
 #Uart
-add_subdirectory(serial)
+add_subdirectory(devices/serial)
 target_link_libraries(Robocon_2022_CV serial)
 
 #TensorRTx

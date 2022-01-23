@@ -3,9 +3,9 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-#include "Camera/mv_video_capture.hpp"
+#include "devices/camera/mv_video_capture.hpp"
 #include "TensorRTx/yolov5.hpp"
-#include "serial/uart_serial.hpp"
+#include "devices/serial/uart_serial.hpp"
 #include "angle/solvePnP/solvePnP.hpp"
 
 //对矩形的长宽比进行筛选，提取出最佳矩形
