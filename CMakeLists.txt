@@ -3,10 +3,9 @@ cmake_minimum_required(VERSION 3.0.0)
 project(Robocon_2022_CV)
 
 set(CMAKE_CXX_FLAGS "-pthread") 
-add_definitions(-std=c++11)
 add_definitions(-DAPI_EXPORTS)
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Ofast -g -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED")
 
 add_executable(Robocon_2022_CV main.cpp)
