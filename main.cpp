@@ -10,6 +10,7 @@
 #include <thread>
 
 #include "TensorRTx/yolov5.hpp"
+#include "angle/prediction/kalman.hpp"
 #include "angle/solvePnP/solvePnP.hpp"
 #include "devices/camera/mv_video_capture.hpp"
 #include "devices/serial/uart_serial.hpp"
@@ -58,9 +59,8 @@ void PTZCameraThread(roboCmd &robo_cmd) {
       fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
 
   // To-do: 异常终端程序后相机自动
-  try {
-    while (true) {
-      mv_capture->isindustryimgInput();
+  while (true) {
+    if (mv_capture->isindustryimgInput()) {
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
       auto res = yolov5_v5_Rtx_start(src_img);
@@ -102,10 +102,8 @@ void PTZCameraThread(roboCmd &robo_cmd) {
       if (cv::waitKey(1) == 'q') break;
       fmt::print("---------------\n");
     }
-  } catch (...) {
-    mv_capture->~VideoCapture();
-    mindvision::VideoCapture mv_capture(camera_params);
   }
+  // mv_capture->~VideoCapture();
   destroy();
 }
 
@@ -127,9 +125,9 @@ void uartThread(roboCmd &robo_cmd) {
 
   while (true) {
     try {
-      serial->updataWriteData(robo_cmd.yaw_angle.load(),
-                             robo_cmd.pitch_angle.load(), robo_cmd.depth.load(),
-                             robo_cmd.detect_object.load(), 0);
+      serial->updataWriteData(
+          robo_cmd.yaw_angle.load(), robo_cmd.pitch_angle.load(),
+          robo_cmd.depth.load(), robo_cmd.detect_object.load(), 0);
       std::this_thread::sleep_for(10ms);
     } catch (...) {
       // To-do: 串口掉线恢复
