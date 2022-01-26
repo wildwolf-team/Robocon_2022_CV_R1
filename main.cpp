@@ -103,7 +103,6 @@ void PTZCameraThread(roboCmd &robo_cmd) {
       fmt::print("---------------\n");
     }
   }
-  // mv_capture->~VideoCapture();
   destroy();
 }
 
