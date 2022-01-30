@@ -146,15 +146,15 @@ void SerialPort::writeData(const int&     _yaw,
     pitch_reduction_ = mergeIntoBytes(write_buff_[8],  write_buff_[7]);
     depth_reduction_ = mergeIntoBytes(write_buff_[10], write_buff_[9]);
 
-    fmt::print("[{}] writeData() ->", idntifier_green);
-    for (size_t i = 0; i != 4; ++i) { fmt::print(" {}", write_buff_[i]); }
-    fmt::print(" {} {} {} {}",
-      static_cast<float>(yaw_reduction_) / 100,
-      static_cast<int>(write_buff_[6]),
-      static_cast<float>(pitch_reduction_) / 100,
-      static_cast<float>(depth_reduction_));
-    for (size_t i = 11; i != 12; ++i) { fmt::print(" {}", write_buff_[i]); }
-    fmt::print("\n");
+    // fmt::print("[{}] writeData() ->", idntifier_green);
+    // for (size_t i = 0; i != 4; ++i) { fmt::print(" {}", write_buff_[i]); }
+    // fmt::print(" {} {} {} {}",
+    //   static_cast<float>(yaw_reduction_) / 100,
+    //   static_cast<int>(write_buff_[6]),
+    //   static_cast<float>(pitch_reduction_) / 100,
+    //   static_cast<float>(depth_reduction_));
+    // for (size_t i = 11; i != 12; ++i) { fmt::print(" {}", write_buff_[i]); }
+    // fmt::print("\n");
 
     yaw_reduction_   = 0x0000;
     pitch_reduction_ = 0x0000;
@@ -190,8 +190,8 @@ void SerialPort::writeData() {
             write_data_.is_shooting);
 
   int count = 0;
-  if (-1 == ioctl (fd, 0x541B, &count)) 
-    fmt::print("[{}] Serial not available.\n", idntifier_red);
+  // if (-1 == ioctl (fd, 0x541B, &count)) 
+  //   fmt::print("[{}] Serial not available.\n", idntifier_red);
 }
 
 void SerialPort::updataWriteData(const float _yaw,
