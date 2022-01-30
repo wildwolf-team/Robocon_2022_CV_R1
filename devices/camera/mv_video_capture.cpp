@@ -112,8 +112,15 @@ int VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
   CameraGetAeState(hCamera, &AEstate);
   CameraSetAeState(hCamera, FALSE);
   CameraSetExposureTime(hCamera, _CAMERA_EXPOSURETIME);
+
+  // 自动白平衡
+  CameraSetWbMode(hCamera, TRUE);
+
   // 设置颜色增益
-  CameraSetGain(hCamera, 160, 123, 100); //id273
+  // CameraSetGain(hCamera, 160, 123, 100); //id273
+
+  //  设置相机增益值
+  CameraSetAnalogGain(hCamera, 10000);
 
   // 让SDK进入工作模式
   CameraPlay(hCamera);
