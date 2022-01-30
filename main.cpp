@@ -10,40 +10,13 @@
 #include <thread>
 
 #include "TensorRTx/yolov5.hpp"
-#include "angle/prediction/kalman.hpp"
+#include "angle/prediction/kalman_prediction.hpp"
 #include "angle/solvePnP/solvePnP.hpp"
 #include "devices/camera/mv_video_capture.hpp"
 #include "devices/serial/uart_serial.hpp"
+#include "utils.hpp"
 
 using namespace std::chrono_literals;
-
-struct roboCmd {
-  std::atomic<float> pitch_angle = 0.f;
-  std::atomic<float> yaw_angle = 0.f;
-  std::atomic<float> depth = 0.f;
-  std::atomic<bool> detect_object = false;
-};
-
-bool rectFilter(std::vector<Yolo::Detection> res, cv::Mat &img,
-                cv::Rect &rect) {
-  float max_conf = .0;
-  int max_conf_res_id = -1;
-  for (size_t i = 0; i < res.size(); i++) {
-    if (0.8 > res[i].bbox[2] / res[i].bbox[3] &&
-        res[i].bbox[2] / res[i].bbox[3] > 1.2)
-      continue;
-    if (res[i].conf > max_conf) {
-      max_conf = res[i].conf;
-      max_conf_res_id = i;
-    }
-  }
-  if (max_conf_res_id != -1) {
-    rect = get_rect(img, res[max_conf_res_id].bbox);
-    return true;
-  } else {
-    return false;
-  }
-}
 
 void PTZCameraThread(roboCmd &robo_cmd) {
   cv::Mat src_img;
@@ -57,6 +30,8 @@ void PTZCameraThread(roboCmd &robo_cmd) {
   auto pnp = std::make_shared<solvepnp::PnP>(
       fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
       fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
+
+  auto kalman_prediction = std::make_shared<KalmanPrediction>();
 
   // To-do: 异常终端程序后相机自动
   while (true) {
@@ -84,6 +59,10 @@ void PTZCameraThread(roboCmd &robo_cmd) {
         robo_cmd.yaw_angle.store(angle.y);
         robo_cmd.depth.store(depth);
         robo_cmd.detect_object.store(true);
+
+        double ptz_yaw_angle = 0;
+        cv::Point2f ss = kalman_prediction->Prediction(ptz_yaw_angle, angle, depth);
+        std::cout << ss << "\n";
 
         cv::rectangle(src_img, rect, cv::Scalar(0, 255, 190), 2);
         cv::putText(src_img, std::to_string(depth),

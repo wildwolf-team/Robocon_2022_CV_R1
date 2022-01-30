@@ -20,6 +20,11 @@ target_link_libraries(Robocon_2022_CV ${OpenCV_LIBS})
 find_package(fmt REQUIRED)
 target_link_libraries(Robocon_2022_CV fmt::fmt)
 
+#Egien
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+target_link_libraries(Robocon_2022_CV ${EIGEN3_LIBS})
+
 #Camera
 add_subdirectory(devices/camera)
 target_link_libraries(Robocon_2022_CV Camera)
