@@ -1,41 +1,36 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-project(Robocon_2022_CV)
+project(Robocon_2022_CV_R1)
 
-set(CMAKE_CXX_FLAGS "-pthread") 
 add_definitions(-DAPI_EXPORTS)
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Ofast -g -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Ofast -g -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED -pthread")
 
-add_executable(Robocon_2022_CV main.cpp)
+add_executable(Robocon_2022_CV_R1 main.cpp)
 include_directories(${PROJECT_SOURCE_DIR})
 
 #OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
-target_link_libraries(Robocon_2022_CV ${OpenCV_LIBS})
+target_link_libraries(Robocon_2022_CV_R1 ${OpenCV_LIBS})
 
 #fmt
 find_package(fmt REQUIRED)
-target_link_libraries(Robocon_2022_CV fmt::fmt)
+target_link_libraries(Robocon_2022_CV_R1 fmt::fmt)
 
 #Egien
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
-target_link_libraries(Robocon_2022_CV ${EIGEN3_LIBS})
+target_link_libraries(Robocon_2022_CV_R1 ${EIGEN3_LIBS})
 
 #Camera
 add_subdirectory(devices/camera)
-target_link_libraries(Robocon_2022_CV Camera)
-
-#solvePnP
-# add_subdirectory(angle/solvePnP)
-# target_link_libraries(Robocon_2022_CV solvePnP)
+target_link_libraries(Robocon_2022_CV_R1 Camera)
 
 #Uart
 add_subdirectory(devices/serial)
-target_link_libraries(Robocon_2022_CV serial)
+target_link_libraries(Robocon_2022_CV_R1 serial)
 
 #TensorRTx
 find_package(CUDA REQUIRED)
@@ -65,13 +60,9 @@ target_link_libraries(TensorRTx nvinfer)
 target_link_libraries(TensorRTx myplugins)
 target_link_libraries(TensorRTx ${OpenCV_LIBS})
 
-if(UNIX)
-add_definitions(-O2 -pthread)
-endif(UNIX)
-
-target_link_libraries(Robocon_2022_CV TensorRTx)
+target_link_libraries(Robocon_2022_CV_R1 TensorRTx)
 
 set(CONFIG_FILE_PATH ${PROJECT_SOURCE_DIR}/configs)
 set(SOURCE_PATH ${PROJECT_SOURCE_DIR})
-target_compile_definitions(Robocon_2022_CV PRIVATE "CONFIG_FILE_PATH=\"${CONFIG_FILE_PATH}\"")
-target_compile_definitions(Robocon_2022_CV PRIVATE "SOURCE_PATH=\"${PROJECT_SOURCE_DIR}\"")
+target_compile_definitions(Robocon_2022_CV_R1 PRIVATE "CONFIG_FILE_PATH=\"${CONFIG_FILE_PATH}\"")
+target_compile_definitions(Robocon_2022_CV_R1 PRIVATE "SOURCE_PATH=\"${PROJECT_SOURCE_DIR}\"")
