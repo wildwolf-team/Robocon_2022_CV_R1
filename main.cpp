@@ -25,7 +25,8 @@ void PTZCameraThread(roboCmd &robo_cmd) {
                                         50000);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
-  start(fmt::format("{}{}", SOURCE_PATH, "/models/RCBall3.engine"));
+  auto detect_ball = std::make_shared<YOLOv5TRT>(
+    fmt::format("{}{}", SOURCE_PATH, "/models/RCBall3.engine"));
 
   auto pnp = std::make_shared<solvepnp::PnP>(
       fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
@@ -34,11 +35,11 @@ void PTZCameraThread(roboCmd &robo_cmd) {
   auto kalman_prediction = std::make_shared<KalmanPrediction>();
 
   // To-do: 异常终端程序后相机自动
-  while (true) {
+  while (cv::waitKey(1) != 'q') {
     if (mv_capture->isindustryimgInput()) {
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
-      auto res = yolov5_v5_Rtx_start(src_img);
+      auto res = detect_ball->Detect(src_img);
 
       cv::line(src_img, cv::Point(0, src_img.rows / 2),
                cv::Point(src_img.cols, src_img.rows / 2),
@@ -82,7 +83,6 @@ void PTZCameraThread(roboCmd &robo_cmd) {
       fmt::print("---------------\n");
     }
   }
-  destroy();
 }
 
 void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial) {
