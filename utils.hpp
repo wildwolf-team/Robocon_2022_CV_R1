@@ -8,6 +8,10 @@ struct roboCmd {
   std::atomic<bool> detect_object = false;
 };
 
+struct roboInf {
+  std::atomic<double> yaw_angle = 0;
+};
+
 bool rectFilter(std::vector<Yolo::Detection> res, cv::Mat &img,
                 cv::Rect &rect) {
   float max_conf = .0;
