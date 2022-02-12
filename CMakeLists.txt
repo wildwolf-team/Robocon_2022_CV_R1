@@ -25,11 +25,14 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 target_link_libraries(Robocon_2022_CV_R1 ${EIGEN3_LIBS})
 
 #Camera
-add_subdirectory(devices/camera)
-target_link_libraries(Robocon_2022_CV_R1 Camera)
+add_library(MVSDK SHARED IMPORTED)
+add_library(Camera devices/camera/mv_video_capture.cpp)
+set(MIMDVISION_SDK_LIBRARY /lib/libMVSDK.so)
+set_property(TARGET MVSDK PROPERTY IMPORTED_LOCATION ${MIMDVISION_SDK_LIBRARY})
+target_link_libraries(Robocon_2022_CV_R1 Camera MVSDK)
 
 #Uart
-add_subdirectory(devices/serial)
+add_library(serial devices/serial/uart_serial.cpp)
 target_link_libraries(Robocon_2022_CV_R1 serial)
 
 #TensorRTx
