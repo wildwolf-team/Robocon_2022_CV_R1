@@ -58,11 +58,7 @@ void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
         rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, depth);
 
-        static double t1 = 0;
-        t1+=0.001;
-        static double test_yaw = 0.0;
-        test_yaw = test_yaw+t1;
-        cv::Point2f ss = kalman_prediction->Prediction(test_yaw, angle, depth);
+        cv::Point2f ss = kalman_prediction->Prediction(robo_inf.yaw_angle.load(), angle, depth);
 
         rect_predicted = rect;
         rect_predicted.x = rect.x + ss.x;
