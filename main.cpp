@@ -22,7 +22,7 @@ void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
   cv::Mat src_img;
 
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
-                                        50000);
+                                        10000);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
   auto detect_ball = std::make_shared<YOLOv5TRT>(
@@ -32,36 +32,13 @@ void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
       fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
       fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
 
+  auto kalman_prediction = std::make_shared<KalmanPrediction>();
+
   cv::Rect rect;
   cv::Rect rect_predicted;
   cv::Rect ball_3d_rect(0, 0, 165, 165);
   cv::Point2f angle;
   float depth;
-
-  // auto kalman_prediction = std::make_shared<KalmanPrediction>();
-  using _Kalman = Kalman<1, S>;
-  _Kalman             kalman;
-  _Kalman::Matrix_xxd A = _Kalman::Matrix_xxd::Identity();
-  _Kalman::Matrix_zxd H;
-  H(0, 0) = 1;
-  _Kalman::Matrix_xxd R;
-  R(0, 0) = 1;
-  for (int i = 1; i < S; i++) {
-    R(i, i) = 100;
-  }
-  _Kalman::Matrix_zzd Q{4};
-  _Kalman::Matrix_x1d init{0, 0};
-  kalman = _Kalman(A, H, R, Q, init, 0);
-
-  auto start = std::chrono::system_clock::now();
-
-  float compensate_w           = 0;
-  float last_compensate_w      = 0;
-  float last_last_compensate_w = 0;
-  int a = 0;
-  double last_yaw = 0;
-  double m_yaw = 0;
-  _Kalman::Matrix_x1d state;
 
   // To-do: 异常终端程序后相机自动
   while (cv::waitKey(1) != 'q') {
@@ -79,47 +56,16 @@ void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
 
       if (rectFilter(res, src_img, rect)) {
         rect.height = rect.width;
+        pnp->solvePnP(ball_3d_rect, rect, angle, depth);
 
-      auto          end      = std::chrono::system_clock::now();
-      // static double t_data[] = {serial_.returnReceiveYaw(), 0, 0};
-      // static cv::Mat R_IM     = cv::Mat(3, 1, CV_64FC1, t_data);
-      // int   depth = 0;
-      // float pitch = 0;
-      m_yaw = robo_inf.yaw_angle.load();
-      // m_yaw       = serial_.returnReceiveYaw();
-      if (std::fabs(last_yaw - m_yaw) > (10 / 180. * M_PI)) {
-        kalman.reset(m_yaw, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-        last_yaw = m_yaw;
-        std::cout << "reset" << std::endl;
-      } else {
-        last_yaw = m_yaw;
-        Eigen::Matrix<double, 1, 1> z_k{m_yaw};
-        state = kalman.update(z_k, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-      }
+        static double t1 = 0;
+        t1+=0.001;
+        static double test_yaw = 0.0;
+        test_yaw = test_yaw+t1;
+        cv::Point2f ss = kalman_prediction->Prediction(test_yaw, angle, depth);
 
-        // depth        = pnp_.returnDepth();
-        // pitch        = pnp_.returnPitchAngle();
-        // cv::Mat m_pw = pnp_.returnTvec_() + R_IM;
-        static double last_yaw = 0, last_speed = 0.0;
-      
-        last_speed                        = state(1, 0);
-        double  c_speed                   = state(1, 0) * depth;
-        double  predict_time              = depth * 0.001 / (/*serial_.returnReceiveBulletVelocity()*/18);
-        double  s_yaw                     = atan2(predict_time * c_speed, depth);
-        compensate_w                      = 8 * tan(s_yaw * 180 / CV_PI);
-        compensate_w                      *= 1000;
-        compensate_w                      = (last_last_compensate_w + last_compensate_w + compensate_w) * 0.333;
-        last_last_compensate_w            = last_compensate_w;
-        last_compensate_w                 = compensate_w;
-        static cv::Point2f ss             = cv::Point2f(0, 0);
-        ss                                = cv::Point2f(compensate_w, 0);
-
-        // double ptz_yaw_angle = 0;
-        // cv::Point2f ss = kalman_prediction->Prediction(ptz_yaw_angle, angle, depth);
-        std::cout << ss << "\n";
-
-        rect_predicted.x = rect.x + compensate_w;
-
+        rect_predicted = rect;
+        rect_predicted.x = rect.x + ss.x;
         pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
 
         robo_cmd.pitch_angle.store(angle.x);
