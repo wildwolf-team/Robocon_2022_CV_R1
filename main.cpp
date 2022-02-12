@@ -18,11 +18,11 @@
 
 using namespace std::chrono_literals;
 
-void PTZCameraThread(roboCmd &robo_cmd) {
+void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
   cv::Mat src_img;
 
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
-                                        50000);
+                                        10000);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
   auto detect_ball = std::make_shared<YOLOv5TRT>(
@@ -33,6 +33,12 @@ void PTZCameraThread(roboCmd &robo_cmd) {
       fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
 
   auto kalman_prediction = std::make_shared<KalmanPrediction>();
+
+  cv::Rect rect;
+  cv::Rect rect_predicted;
+  cv::Rect ball_3d_rect(0, 0, 165, 165);
+  cv::Point2f angle;
+  float depth;
 
   // To-do: 异常终端程序后相机自动
   while (cv::waitKey(1) != 'q') {
@@ -48,24 +54,23 @@ void PTZCameraThread(roboCmd &robo_cmd) {
                cv::Point(src_img.cols / 2, src_img.rows),
                cv::Scalar(0, 255, 190));
 
-      cv::Rect rect;
       if (rectFilter(res, src_img, rect)) {
         rect.height = rect.width;
-        cv::Rect ball_3d_rect(0, 0, 165, 165);
-        cv::Point2f angle;
-        float depth;
         pnp->solvePnP(ball_3d_rect, rect, angle, depth);
+
+        float yaw_compensate = kalman_prediction->Prediction(robo_inf.yaw_angle.load(), angle, depth);
+
+        rect_predicted = rect;
+        rect_predicted.x = rect.x + yaw_compensate;
+        pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
 
         robo_cmd.pitch_angle.store(angle.x);
         robo_cmd.yaw_angle.store(angle.y);
         robo_cmd.depth.store(depth);
         robo_cmd.detect_object.store(true);
 
-        double ptz_yaw_angle = 0;
-        cv::Point2f ss = kalman_prediction->Prediction(ptz_yaw_angle, angle, depth);
-        std::cout << ss << "\n";
-
         cv::rectangle(src_img, rect, cv::Scalar(0, 255, 190), 2);
+        cv::rectangle(src_img, rect_predicted, cv::Scalar(0, 255, 0), 2);
         cv::putText(src_img, std::to_string(depth),
                     cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_DUPLEX, 1.2,
                     cv::Scalar(0, 255, 190), 2);
@@ -85,20 +90,21 @@ void PTZCameraThread(roboCmd &robo_cmd) {
   }
 }
 
-void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial) {
+void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, roboInf &robo_inf) {
   while (true) {
     try {
       serial->updateReceiveInformation();
+      robo_inf.yaw_angle.store(serial->returnReceiveYaw());
       std::this_thread::sleep_for(1ms);
     } catch (...) {
     }
   }
 }
 
-void uartThread(roboCmd &robo_cmd) {
+void uartThread(roboCmd &robo_cmd, roboInf &robo_inf) {
   auto serial = std::make_shared<uart::SerialPort>(
       fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
-  std::thread uart_receive_thread(uartReceiveThread, serial);
+  std::thread uart_receive_thread(uartReceiveThread, serial, std::ref(robo_inf));
   uart_receive_thread.detach();
 
   while (true) {
@@ -115,9 +121,10 @@ void uartThread(roboCmd &robo_cmd) {
 
 int main(int argc, char *argv[]) {
   roboCmd robo_cmd;
-  std::thread camera_thread(PTZCameraThread, std::ref(robo_cmd));
+  roboInf robo_inf;
+  std::thread camera_thread(PTZCameraThread, std::ref(robo_cmd), std::ref(robo_inf));
   camera_thread.detach();
-  std::thread uart_thread(uartThread, std::ref(robo_cmd));
+  std::thread uart_thread(uartThread, std::ref(robo_cmd), std::ref(robo_inf));
   uart_thread.detach();
   if (std::cin.get() == 'q') {
     camera_thread.~thread();

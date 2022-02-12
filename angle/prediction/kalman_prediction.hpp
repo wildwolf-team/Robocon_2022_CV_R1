@@ -22,11 +22,11 @@ class KalmanPrediction : public Kalman<1, S> {
     }
     _Kalman::Matrix_zzd Q{4};
     _Kalman::Matrix_x1d init{0, 0};
-    _Kalman(A, H, R, Q, init, 0);
+    this->reset(A, H, R, Q, init, 0);
     start = std::chrono::system_clock::now();
   }
 
-  cv::Point2f Prediction(double ptz_yaw_angle, cv::Point2f angle, float depth) {
+  float Prediction(double ptz_yaw_angle, cv::Point2f angle, float depth) {
     auto end = std::chrono::system_clock::now();
     m_yaw = ptz_yaw_angle;
     if (std::fabs(last_yaw - m_yaw) > (10 / 180. * M_PI)) {
@@ -43,7 +43,6 @@ class KalmanPrediction : public Kalman<1, S> {
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
               .count());
     }
-    static double last_yaw = 0, last_speed = 0.0;
 
     last_speed = state(1, 0);
     double c_speed = state(1, 0) * depth;
@@ -57,20 +56,19 @@ class KalmanPrediction : public Kalman<1, S> {
     last_last_compensate_w = last_compensate_w;
     last_compensate_w = compensate_w;
     static cv::Point2f ss = cv::Point2f(0, 0);
-    ss = cv::Point2f(compensate_w, 0);
-    return ss;
+    return compensate_w;
   }
 
  private:
 //   _Kalman kalman;
   std::chrono::time_point<std::chrono::system_clock> start;
-  std::chrono::time_point<std::chrono::system_clock> end;
 
   float compensate_w = 0;
   float last_compensate_w = 0;
   float last_last_compensate_w = 0;
   int a = 0;
   double last_yaw = 0;
+  double last_speed =0;
   double m_yaw = 0;
   _Kalman::Matrix_x1d state;
 };
