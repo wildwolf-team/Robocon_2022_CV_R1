@@ -20,7 +20,7 @@ using namespace std::chrono_literals;
 
 void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
-                                        10000);
+                                        25000);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
   auto detect_ball = std::make_shared<YOLOv5TRT>(
@@ -46,12 +46,14 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       src_img = mv_capture->image();
       auto res = detect_ball->Detect(src_img);
 
+#ifndef RELEASE
       cv::line(src_img, cv::Point(0, src_img.rows / 2),
                cv::Point(src_img.cols, src_img.rows / 2),
                cv::Scalar(0, 255, 190));
       cv::line(src_img, cv::Point(src_img.cols / 2, 0),
                cv::Point(src_img.cols / 2, src_img.rows),
                cv::Scalar(0, 255, 190));
+#endif
 
       if (rectFilter(res, src_img, rect)) {
         rect.height = rect.width;
@@ -68,6 +70,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         robo_cmd.depth.store(depth);
         robo_cmd.detect_object.store(true);
 
+#ifndef RELEASE
         cv::rectangle(src_img, rect, cv::Scalar(0, 255, 190), 2);
         cv::rectangle(src_img, rect_predicted, cv::Scalar(0, 255, 0), 2);
         cv::putText(src_img, std::to_string(depth),
@@ -78,10 +81,13 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
                         ", yaw:" + std::to_string(angle.y),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 255, 190));
+#endif
       } else {
         robo_cmd.detect_object.store(false);
       }
+#ifndef RELEASE
       if (!src_img.empty()) cv::imshow("img", src_img);
+#endif
       if (cv::waitKey(1) == 'q') break;
     }
   }
