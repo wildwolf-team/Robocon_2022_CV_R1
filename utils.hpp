@@ -1,14 +1,14 @@
 #pragma once
 #include <atomic>
 
-struct roboCmd {
+struct RoboCmd {
   std::atomic<float> pitch_angle = 0.f;
   std::atomic<float> yaw_angle = 0.f;
   std::atomic<float> depth = 0.f;
   std::atomic<bool> detect_object = false;
 };
 
-struct roboInf {
+struct RoboInf {
   std::atomic<double> yaw_angle = 0;
 };
 

@@ -18,9 +18,7 @@
 
 using namespace std::chrono_literals;
 
-void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
-  cv::Mat src_img;
-
+void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
                                         10000);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
@@ -34,6 +32,7 @@ void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
 
   auto kalman_prediction = std::make_shared<KalmanPrediction>();
 
+  cv::Mat src_img;
   cv::Rect rect;
   cv::Rect rect_predicted;
   cv::Rect ball_3d_rect(0, 0, 165, 165);
@@ -79,18 +78,16 @@ void PTZCameraThread(roboCmd &robo_cmd, roboInf &robo_inf) {
                         ", yaw:" + std::to_string(angle.y),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 255, 190));
-        fmt::print("pitch:{}, yaw:{} \n", angle.x, angle.y);
       } else {
         robo_cmd.detect_object.store(false);
       }
       if (!src_img.empty()) cv::imshow("img", src_img);
       if (cv::waitKey(1) == 'q') break;
-      fmt::print("---------------\n");
     }
   }
 }
 
-void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, roboInf &robo_inf) {
+void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, RoboInf &robo_inf) {
   while (true) {
     try {
       serial->updateReceiveInformation();
@@ -101,7 +98,7 @@ void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, roboInf &robo_i
   }
 }
 
-void uartThread(roboCmd &robo_cmd, roboInf &robo_inf) {
+void uartThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   auto serial = std::make_shared<uart::SerialPort>(
       fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
   std::thread uart_receive_thread(uartReceiveThread, serial, std::ref(robo_inf));
@@ -120,8 +117,8 @@ void uartThread(roboCmd &robo_cmd, roboInf &robo_inf) {
 }
 
 int main(int argc, char *argv[]) {
-  roboCmd robo_cmd;
-  roboInf robo_inf;
+  RoboCmd robo_cmd;
+  RoboInf robo_inf;
   std::thread camera_thread(PTZCameraThread, std::ref(robo_cmd), std::ref(robo_inf));
   camera_thread.detach();
   std::thread uart_thread(uartThread, std::ref(robo_cmd), std::ref(robo_inf));
