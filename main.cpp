@@ -59,7 +59,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, depth);
 
-        float yaw_compensate = kalman_prediction->Prediction(robo_inf.yaw_angle.load(), angle, depth);
+        float yaw_compensate = kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
 
         rect_predicted = rect;
         rect_predicted.x = rect.x + yaw_compensate;
