@@ -37,6 +37,18 @@ target_link_libraries(Robocon_2022_CV_R1 Camera MVSDK)
 add_library(serial devices/serial/uart_serial.cpp)
 target_link_libraries(Robocon_2022_CV_R1 serial)
 
+# new serial
+set(serial_SRCS
+    devices/new_serial/src/serial.cc
+    devices/new_serial/src/impl/unix.cc
+    devices/new_serial/src/impl/list_ports/list_ports_linux.cc
+    devices/new_serial/serial/serial.h
+    devices/new_serial/serial/v8stdint.h
+)
+include_directories(devices/new_serial)
+add_library(new_serial ${serial_SRCS})
+target_link_libraries(Robocon_2022_CV_R1 new_serial)
+
 #TensorRTx
 find_package(CUDA REQUIRED)
 

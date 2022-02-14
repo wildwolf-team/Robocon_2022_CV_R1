@@ -15,6 +15,7 @@
 #include "devices/camera/mv_video_capture.hpp"
 #include "devices/serial/uart_serial.hpp"
 #include "utils.hpp"
+#include "devices/new_serial/serial.hpp"
 
 using namespace std::chrono_literals;
 
@@ -93,11 +94,20 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   }
 }
 
-void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, RoboInf &robo_inf) {
+// void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, RoboInf &robo_inf) {
+//   while (true) {
+//     try {
+//       serial->updateReceiveInformation();
+//       robo_inf.yaw_angle.store(serial->returnReceiveYaw());
+//       std::this_thread::sleep_for(1ms);
+//     } catch (...) {
+//     }
+//   }
+// }
+void uartReceiveThread(std::shared_ptr<RoboSerial> serial, RoboInf &robo_inf) {
   while (true) {
     try {
-      serial->updateReceiveInformation();
-      robo_inf.yaw_angle.store(serial->returnReceiveYaw());
+
       std::this_thread::sleep_for(1ms);
     } catch (...) {
     }
@@ -105,16 +115,21 @@ void uartReceiveThread(std::shared_ptr<uart::SerialPort> serial, RoboInf &robo_i
 }
 
 void uartThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
-  auto serial = std::make_shared<uart::SerialPort>(
-      fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
-  std::thread uart_receive_thread(uartReceiveThread, serial, std::ref(robo_inf));
-  uart_receive_thread.detach();
+  auto new_serial = std::make_shared<RoboSerial>("/dev/ttyACM0", 921600);
+  // auto serial = std::make_shared<uart::SerialPort>(
+  //     fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
+  // std::thread uart_receive_thread(uartReceiveThread, new_serial, std::ref(robo_inf));
+  // uart_receive_thread.detach();
+  // serial::Serial my_serial("/dev/ttyACM0", 921600, serial::Timeout::simpleTimeout(1000));
+  // uint8_t temp;
+  // float temp1;
 
   while (true) {
     try {
-      serial->updataWriteData(
-          robo_cmd.yaw_angle.load(), robo_cmd.pitch_angle.load(),
-          robo_cmd.depth.load(), robo_cmd.detect_object.load(), 0);
+      new_serial->ReceiveInfo(std::ref(robo_inf));
+      // serial->updataWriteData(
+      //     robo_cmd.yaw_angle.load(), robo_cmd.pitch_angle.load(),
+      //     robo_cmd.depth.load(), robo_cmd.detect_object.load(), 0);
       std::this_thread::sleep_for(10ms);
     } catch (...) {
       // To-do: 串口掉线恢复

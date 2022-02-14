@@ -9,7 +9,7 @@ struct RoboCmd {
 };
 
 struct RoboInf {
-  std::atomic<double> yaw_angle = 0;
+  std::atomic<float> yaw_angle = 0;
 };
 
 bool rectFilter(std::vector<Yolo::Detection> res, cv::Mat &img,
