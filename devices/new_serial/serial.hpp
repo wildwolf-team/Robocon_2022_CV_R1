@@ -31,7 +31,7 @@ class RoboSerial : public serial::Serial {
     }
   }
 
-  bool SendInfo(RoboCmd &robo_cmd) {
+  bool WriteInfo(RoboCmd &robo_cmd) {
     if (this->isOpen()) {
       this->write((uint8_t *)&robo_cmd, sizeof(robo_cmd));
       return true;

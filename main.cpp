@@ -107,7 +107,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 void uartReceiveThread(std::shared_ptr<RoboSerial> serial, RoboInf &robo_inf) {
   while (true) {
     try {
-
+      serial->ReceiveInfo(std::ref(robo_inf));
       std::this_thread::sleep_for(1ms);
     } catch (...) {
     }
@@ -118,15 +118,15 @@ void uartThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   auto new_serial = std::make_shared<RoboSerial>("/dev/ttyACM0", 921600);
   // auto serial = std::make_shared<uart::SerialPort>(
   //     fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml"));
-  // std::thread uart_receive_thread(uartReceiveThread, new_serial, std::ref(robo_inf));
-  // uart_receive_thread.detach();
+  std::thread uart_receive_thread(uartReceiveThread, new_serial, std::ref(robo_inf));
+  uart_receive_thread.detach();
   // serial::Serial my_serial("/dev/ttyACM0", 921600, serial::Timeout::simpleTimeout(1000));
   // uint8_t temp;
   // float temp1;
 
   while (true) {
     try {
-      new_serial->ReceiveInfo(std::ref(robo_inf));
+      new_serial->WriteInfo(std::ref(robo_cmd));
       // serial->updataWriteData(
       //     robo_cmd.yaw_angle.load(), robo_cmd.pitch_angle.load(),
       //     robo_cmd.depth.load(), robo_cmd.detect_object.load(), 0);
