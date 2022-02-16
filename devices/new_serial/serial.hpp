@@ -21,14 +21,10 @@ class RoboSerial : public serial::Serial {
   }
 
   void WriteInfo(RoboCmd &robo_cmd) {
-    // float yaw_angle = robo_cmd.yaw_angle.load();
-    // float pitch_angle = robo_cmd.pitch_angle.load();
-    // float depth = robo_cmd.depth.load();
-    // uint8_t detect_object = robo_cmd.detect_object.load();
-    float yaw_angle = 1.1;
-    float pitch_angle = 1.1;
-    float depth = 1.1;
-    uint8_t detect_object = 1;
+    float yaw_angle = robo_cmd.yaw_angle.load();
+    float pitch_angle = robo_cmd.pitch_angle.load();
+    float depth = robo_cmd.depth.load();
+    uint8_t detect_object = robo_cmd.detect_object.load();
     this->write((uint8_t *)&robo_cmd.start_flag, 1);
     this->write((uint8_t *)&yaw_angle, 4);
     this->write((uint8_t *)&pitch_angle, 4);
