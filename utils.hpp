@@ -2,10 +2,12 @@
 #include <atomic>
 
 struct RoboCmd {
+  uint8_t start_flag = (unsigned)'S';
   std::atomic<float> pitch_angle = 0.f;
   std::atomic<float> yaw_angle = 0.f;
   std::atomic<float> depth = 0.f;
-  std::atomic<bool> detect_object = false;
+  std::atomic<uint8_t> detect_object = false;
+  uint8_t end_flag = (unsigned)'E';
 };
 
 struct RoboInf {
