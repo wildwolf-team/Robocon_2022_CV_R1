@@ -21,25 +21,32 @@ class RoboSerial : public serial::Serial {
   }
 
   void WriteInfo(RoboCmd &robo_cmd) {
-    float yaw_angle = robo_cmd.yaw_angle.load();
-    float pitch_angle = robo_cmd.pitch_angle.load();
-    float depth = robo_cmd.depth.load();
-    uint8_t detect_object = robo_cmd.detect_object.load();
-    this->write((uint8_t *)&robo_cmd.start_flag, 1);
-    this->write((uint8_t *)&yaw_angle, 4);
-    this->write((uint8_t *)&pitch_angle, 4);
-    this->write((uint8_t *)&depth, 4);
-    this->write((uint8_t *)&detect_object, 1);
-    this->write((uint8_t *)&robo_cmd.end_flag, 1);
+    struct temp_send_info_struct{
+      uint8_t start = (unsigned)'S';
+      float yaw_angle;
+      float pitch_angle;
+      float depth;
+      uint8_t detect_object;
+      uint8_t end = (unsigned)'E';
+    } __attribute__((packed));
+    temp_send_info_struct t1;
+    t1.yaw_angle = robo_cmd.yaw_angle.load();
+    t1.pitch_angle = robo_cmd.pitch_angle.load();
+    t1.depth = robo_cmd.depth.load();
+    t1.detect_object = robo_cmd.detect_object.load();
+
+    this->write((uint8_t *)&t1, sizeof(t1));
   }
 
   void ReceiveInfo(RoboInf &robo_inf) {
     RoboInf temp_info;
-      uint8_t temp;
+    uint8_t temp;
+    this->read(&temp, 1);
+    while (temp != 'S')
       this->read(&temp, 1);
-      while (temp != 'S')
-        this->read(&temp, 1);
-      this->read((uint8_t *)&temp_info, sizeof(temp_info));
+    this->read((uint8_t *)&temp_info, sizeof(temp_info));
+    robo_inf.yaw_angle.store(temp_info.yaw_angle);
+    std::cout << temp_info.yaw_angle.load() << "\n";
   }
 
  private:

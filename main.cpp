@@ -19,10 +19,6 @@
 
 using namespace std::chrono_literals;
 
-  // auto serial_old = std::make_shared<uart::SerialPort>(
-  //   fmt::format("{}{}", CONFIG_FILE_PATH, "/uart_serial_config.xml")
-  // );
-
 void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
                                         10000);
@@ -102,9 +98,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 void uartWriteThread(const std::shared_ptr<RoboSerial>& serial, RoboCmd &robo_cmd) {
   while (true) {
     try {
-      serial->WriteInfo(std::ref(robo_cmd));
-      // serial_old->writeData(1,900,1,800,1000,0,1);
-      std::this_thread::sleep_for(100ms);
+      serial->WriteInfo(robo_cmd);
+      std::this_thread::sleep_for(10ms);
     } catch (const std::exception &e) {
       fmt::print("[{}] serial exception: {} serial restarting...\n", idntifier_red, e.what());
       std::this_thread::sleep_for(1000ms);
@@ -115,7 +110,7 @@ void uartWriteThread(const std::shared_ptr<RoboSerial>& serial, RoboCmd &robo_cm
 void uartReadThread(const std::shared_ptr<RoboSerial>& serial, RoboInf &robo_inf) {
   while (true) {
     try {
-      serial->ReceiveInfo(std::ref(robo_inf));
+      serial->ReceiveInfo(robo_inf);
       std::this_thread::sleep_for(1ms);
     } catch (const std::exception &e) {
       fmt::print("[{}] serial exception: {} serial restarting...\n", idntifier_red, e.what());
@@ -125,12 +120,12 @@ void uartReadThread(const std::shared_ptr<RoboSerial>& serial, RoboInf &robo_inf
 }
 
 void uartThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
-  auto serial = std::make_shared<RoboSerial>("/dev/ttyUSB0", 115200);
+  auto serial = std::make_shared<RoboSerial>("/dev/ttyACM0", 115200);
   std::thread uart_write_thread(uartWriteThread, serial,
                                   std::ref(robo_cmd));
   uart_write_thread.detach();
   std::thread uart_read_thread(uartReadThread, serial,
-                                  std::ref(robo_cmd));
+                                  std::ref(robo_inf));
   uart_read_thread.detach();
 
   while (true)
