@@ -101,6 +101,12 @@ void uartWriteThread(const std::shared_ptr<RoboSerial>& serial, RoboCmd &robo_cm
       serial->WriteInfo(robo_cmd);
       std::this_thread::sleep_for(10ms);
     } catch (const std::exception &e) {
+      static int serial_write_excepted_times {0};
+      if (serial_write_excepted_times++ > 5) {
+        std::this_thread::sleep_for(10000ms);
+        fmt::print("[{}] write serial excepted to many times, sleep 10s.\n", idntifier_red);
+        serial_write_excepted_times = 0;
+      }
       fmt::print("[{}] serial exception: {} serial restarting...\n", idntifier_red, e.what());
       std::this_thread::sleep_for(1000ms);
     }
@@ -113,6 +119,12 @@ void uartReadThread(const std::shared_ptr<RoboSerial>& serial, RoboInf &robo_inf
       serial->ReceiveInfo(robo_inf);
       std::this_thread::sleep_for(1ms);
     } catch (const std::exception &e) {
+      static int serial_read_excepted_times {0};
+      if (serial_read_excepted_times++ > 5) {
+        std::this_thread::sleep_for(10000ms);
+        fmt::print("[{}] read serial excepted to many times, sleep 10s.\n", idntifier_red);
+        serial_read_excepted_times = 0;
+      }
       fmt::print("[{}] serial exception: {} serial restarting...\n", idntifier_red, e.what());
       std::this_thread::sleep_for(1000ms);
     }
@@ -134,34 +146,31 @@ void uartThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       serial->available();
     } catch (const std::exception &e) {
       static int change_serial_port_times {0};
-      while (++change_serial_port_times)
-      {
-        if (change_serial_port_times > 5) {
-          fmt::print("[{}] Serial restarted to many times, sleep 1min...\n", idntifier_red);
-          std::this_thread::sleep_for(6000ms);
-          change_serial_port_times = 0;
-        }
-        fmt::print("[{}] exception: {} serial restarting...\n", idntifier_red, e.what());
-        std::string port = serial->getPort();
-        port.pop_back();
-        try { serial->close(); } catch(...) { }
-        
-        for (int i = 0; i < 5; i++) {
-          fmt::print("[{}] try to change to {}{} port.\n", idntifier_red, port, i);
-          try { serial->setPort(port + std::to_string(i)); } catch(...) { }
-          try {
-            serial->open();
-          } catch (const std::exception &e1) {
-            fmt::print("[{}] change {}{} serial failed.\n", idntifier_red, port, i);
-          }
-          if (serial->isOpen()) {
-            fmt::print("[{}] change to {}{} serial successed.\n", idntifier_green, port, i);
-            break;
-          }
-          std::this_thread::sleep_for(300ms);
-        }
-        if (serial->isOpen()) break;
+      if (change_serial_port_times++ > 5) {
+        fmt::print("[{}] Serial restarted to many times, sleep 1min...\n", idntifier_red);
+        std::this_thread::sleep_for(10000ms);
+        change_serial_port_times = 0;
       }
+      fmt::print("[{}] exception: {} serial restarting...\n", idntifier_red, e.what());
+      std::string port = serial->getPort();
+      port.pop_back();
+      try { serial->close(); } catch(...) { }
+      
+      for (int i = 0; i < 5; i++) {
+        fmt::print("[{}] try to change to {}{} port.\n", idntifier_red, port, i);
+        try { serial->setPort(port + std::to_string(i)); } catch(...) { }
+        try {
+          serial->open();
+        } catch (const std::exception &e1) {
+          fmt::print("[{}] change {}{} serial failed.\n", idntifier_red, port, i);
+        }
+        if (serial->isOpen()) {
+          fmt::print("[{}] change to {}{} serial successed.\n", idntifier_green, port, i);
+          break;
+        }
+        std::this_thread::sleep_for(300ms);
+      }
+      if (serial->isOpen()) break;
     }
     std::this_thread::sleep_for(1000ms);
   }
