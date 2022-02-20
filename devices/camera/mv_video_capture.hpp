@@ -19,9 +19,6 @@
 
 namespace mindvision {
 
-// auto idntifier_green = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "mv_video_capture");
-// auto idntifier_red   = fmt::format(fg(fmt::color::red)   | fmt::emphasis::bold, "mv_video_capture");
-
 enum EXPOSURETIME {
   // 相机曝光时间
   EXPOSURE_10000 = 10000,
@@ -105,9 +102,9 @@ class VideoCapture {
    * @param _CAMERA_RESOLUTION_COLS  设置相机宽度  
    * @param _CAMERA_RESOLUTION_ROWS  设置相机高度
    * @param _CAMERA_EXPOSURETIME     设置相机曝光
-   * @return int 
+   * @return bool
    */
-  int cameraInit(const int _CAMERA_RESOLUTION_COLS,
+  bool cameraInit(const int _CAMERA_RESOLUTION_COLS,
                  const int _CAMERA_RESOLUTION_ROWS,
                  const int _CAMERA_EXPOSURETIME);
   /**
