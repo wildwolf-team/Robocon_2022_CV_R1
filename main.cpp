@@ -50,10 +50,10 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 #ifndef RELEASE
       cv::line(src_img, cv::Point(0, src_img.rows / 2),
                cv::Point(src_img.cols, src_img.rows / 2),
-               cv::Scalar(0, 255, 190));
+               cv::Scalar(0, 150, 255));
       cv::line(src_img, cv::Point(src_img.cols / 2, 0),
                cv::Point(src_img.cols / 2, src_img.rows),
-               cv::Scalar(0, 255, 190));
+               cv::Scalar(0, 150, 255));
 #endif
 
       if (rectFilter(res, src_img, rect)) {
@@ -73,16 +73,16 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         robo_cmd.detect_object.store(true);
 
 #ifndef RELEASE
-        cv::rectangle(src_img, rect, cv::Scalar(0, 255, 190), 2);
-        cv::rectangle(src_img, rect_predicted, cv::Scalar(0, 255, 190), 2);
+        cv::rectangle(src_img, rect, cv::Scalar(0, 150, 255), 2);
+        cv::rectangle(src_img, rect_predicted, cv::Scalar(255, 0, 150), 2);
         cv::putText(src_img, std::to_string(depth),
                     cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_DUPLEX, 1.2,
-                    cv::Scalar(0, 255, 190), 2);
+                    cv::Scalar(0, 150, 255), 2);
         cv::putText(src_img,
                     "pitch:" + std::to_string(angle.x) +
                         ", yaw:" + std::to_string(angle.y),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
-                    cv::Scalar(0, 255, 190));
+                    cv::Scalar(0, 150, 255));
 #endif
       } else {
         robo_cmd.detect_object.store(false);
