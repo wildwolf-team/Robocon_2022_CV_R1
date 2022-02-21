@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<!--
+  PTZ_CAMERA_X - 相机与云台的 X 轴偏移(左负右正)
+  PTZ_CAMERA_Y - 相机与云台的 Y 轴偏移(上负下正)
+  PTZ_CAMERA_Z - 相机与云台的 Z 轴偏移(前正后负)
+  - 单位 mm
+  - 云台与相机 相机作为参考点
+-->
+<PTZ_CAMERA_X>0.0</PTZ_CAMERA_X>
+<PTZ_CAMERA_Y>0.0</PTZ_CAMERA_Y>
+<PTZ_CAMERA_Z>0.0</PTZ_CAMERA_Z>
+<!-- 
+  PTZ_BARREL_X - 云台与枪管的 X 轴偏移(左负右正)
+  PTZ_BARREL_Y - 云台与枪管的 Y 轴偏移(上负下正)
+  PTZ_BARREL_Z - 云台与枪管的 Z 轴偏移(前正后负)
+  - 单位 mm
+  - 云台与枪管 云台作为参考点
+-->
+<PTZ_BARREL_X>0.0</PTZ_BARREL_X>
+<PTZ_BARREL_Y>0.0</PTZ_BARREL_Y>
+<PTZ_BARREL_Z>0.0</PTZ_BARREL_Z>
+<!-- 
+  OFFSET_ARMOR_PITCH - yaw 轴固定补偿 buff:0.55
+  OFFSET_ARMOR_YAW   - pitch 轴固定补偿 buff:1.7
+  - 单位 ° 
+-->
+<OFFSET_YAW>0.0</OFFSET_YAW>
+<OFFSET_PITCH>0.0</OFFSET_PITCH>
+</opencv_storage>

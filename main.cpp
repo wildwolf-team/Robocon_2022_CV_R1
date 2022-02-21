@@ -40,7 +40,6 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   cv::Point2f angle;
   float depth;
 
-  // To-do: 异常终端程序后相机自动
   while (cv::waitKey(1) != 'q') {
     if (mv_capture->isindustryimgInput()) {
       mv_capture->cameraReleasebuff();
@@ -56,7 +55,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
                cv::Scalar(0, 150, 255));
 #endif
 
-      if (rectFilter(res, src_img, rect)) {
+      if (PTZCameraRectFilter(res, src_img, rect)) {
         rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, depth);
 
@@ -91,6 +90,37 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       if (!src_img.empty()) cv::imshow("img", src_img);
 #endif
       if (cv::waitKey(1) == 'q') break;
+    }
+  }
+}
+
+void ClipBallThread(RoboCmd &robo_cmd) {
+  auto clip_camera = std::make_shared<cv::VideoCapture>(0);
+  auto detect_ball = std::make_shared<YOLOv5TRT>(
+      fmt::format("{}{}", SOURCE_PATH, "/models/RCBall3.engine"));
+  auto pnp = std::make_shared<solvepnp::PnP>(
+      fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
+      fmt::format("{}{}", CONFIG_FILE_PATH, "/clip_pnp_config.xml"));
+  cv::Mat src_img;
+  cv::Rect ball_rect;
+  cv::Rect ball_3d_rect(0, 0, 165, 165);
+  cv::Point2f angle;
+  float depth;
+
+  while (cv::waitKey(1) != 'q') {
+    if (clip_camera->isOpened())
+    {
+      clip_camera->read(src_img);
+      auto res = detect_ball->Detect(src_img);
+      if (ClipCameraRectFilter(res, src_img, ball_rect))
+      {
+        pnp->solvePnP(ball_3d_rect, ball_rect, angle, depth);
+        robo_cmd.clip_x_angle.store(angle.x);
+
+#ifndef RELEASE
+        if (!src_img.empty()) cv::imshow("clip_img", src_img);
+#endif
+      }
     }
   }
 }
@@ -184,9 +214,12 @@ int main(int argc, char *argv[]) {
   camera_thread.detach();
   std::thread uart_thread(uartThread, std::ref(robo_cmd), std::ref(robo_inf));
   uart_thread.detach();
+  std::thread clip_camera_thread(ClipBallThread, std::ref(robo_cmd));
+  clip_camera_thread.detach();
   if (std::cin.get() == 'q') {
     camera_thread.~thread();
     uart_thread.~thread();
+    clip_camera_thread.~thread();
   }
   return 0;
 }
