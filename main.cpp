@@ -93,7 +93,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         kalman.reset(robo_inf.yaw_angle.load(), std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() * 0.001);
         last_yaw = robo_inf.yaw_angle.load();
         std::cout << "reset" << std::endl;
-        cv::putText(src_img, "reset", cv::Point(0, 100), cv::FONT_HERSHEY_DUPLEX, 1,
+        cv::putText(src_img, "reset", cv::Point(0, 200), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 150, 255));
         resettimes++;
       } else {
@@ -133,7 +133,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         compensate_w           = (last_last_compensate_w + last_compensate_w + compensate_w) * 0.333;
         last_last_compensate_w = last_compensate_w;
         last_compensate_w      = compensate_w;
-        cv::putText(src_img, std::to_string(compensate_w),
+        cv::putText(src_img, "compensate_w:" + std::to_string(compensate_w),
                     cv::Point(0, 150), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 150, 255), 1);
 
