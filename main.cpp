@@ -66,6 +66,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         rect_predicted = rect;
         rect_predicted.x = rect.x + yaw_compensate;
         pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
+        depth = depth / 1.2f;
 
         robo_cmd.pitch_angle.store(angle.x);
         robo_cmd.yaw_angle.store(angle.y);
