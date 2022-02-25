@@ -13,22 +13,21 @@ namespace solvepnp
     /**
      * @brief 桂林电子科技大学下坠补偿
      * 
-     * @param coordinate_mm 世界坐标系, x 为 yaw 轴
+     * @param coordinate_mm 世界坐标系, x 为 相机相对于目标的水平距离, z 为深度
      * @param shoot_speed 射速
      * @param pitch_angle 解算的 pitch 轴角度
      */
     void FallCompensator(cv::Point3f coordinate_mm, float shoot_speed, float &pitch_angle)
     {
         float KAPPA = 0.00045f; //空气阻力系数
-        float M = 0.21f;        //质量
+        float M = 0.04f;        //质量
 
         float x = coordinate_mm.x / 1000.f;
         float z = coordinate_mm.z / 1000.f;
         float y = -coordinate_mm.y / 1000.f;
         float speed = shoot_speed;
-        float pp = sqrt(x * x + z * z);
-        // float p = sqrt(x * x + z * z);
-        float A = sqrt(1 - 2 * pp * KAPPA / M);
+        float p = sqrt(x * x + z * z);
+        float A = sqrt(1 - 2 * p * KAPPA / M);
         float pitchAngleRef = 0.f; //pitch 补偿大小
 
         #define GRAVITY 9.80565f
@@ -50,7 +49,6 @@ namespace solvepnp
             pitchAngleRef = atan(tanAngleA) * 180 / CV_PI;
         }
         else if (delta > 0) {
-
             tanAngleA = mid - sqrt(delta) / (2 * a);
             angleA = atanf(tanAngleA) * 180 / CV_PI;;
             tanAngleB = mid + sqrt(delta) / (2 * a);
