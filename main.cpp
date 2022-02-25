@@ -18,10 +18,46 @@
 #include "utils.hpp"
 
 using namespace std::chrono_literals;
+using _Kalman = Kalman<1, S>;
 
 void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
+  _Kalman             kalman;
+  _Kalman::Matrix_xxd A = _Kalman::Matrix_xxd::Identity();
+  _Kalman::Matrix_zxd H;
+  H(0, 0) = 1;
+  _Kalman::Matrix_xxd R;
+  R(0, 0) = 20;
+  for (int i = 1; i < S; i++) {
+    R(i, i) = 100;
+  }
+  _Kalman::Matrix_zzd Q{4};
+  _Kalman::Matrix_x1d init{0, 0};
+  kalman = _Kalman(A, H, R, Q, init, 0);
+
+  auto start = std::chrono::system_clock::now();
+
+  float compensate_w           = 0;
+  float last_compensate_w      = 0;
+  float last_last_compensate_w = 0;
+  int   a                      = 0;
+  // int num =0;
+  double c_speed = 0.0, last_speed = 0.0;
+  float top_yaw = 0;
+  float last_top_yaw = 0;
+  float  pitch                  = 0;
+  float  yaw                    = 0;
+  int    num                    = 0;
+  int    resettimes             = 0;
+  int    angletimes1            = 0;
+  int    angletimes2            = 0;
+  int    angleyaw               = 0;
+  bool   issame                 = 0;
+  bool   isTop                  = 0;
+
+
+
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
-                                        10000);
+                                        7500);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
   auto detect_ball = std::make_shared<YOLOv5TRT>(
@@ -42,6 +78,36 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 
   while (cv::waitKey(1) != 'q') {
     if (mv_capture->isindustryimgInput()) {
+      auto          end = std::chrono::system_clock::now();
+      static double last_yaw = 0, last_speed = 0.0;
+      angleyaw = robo_inf.yaw_angle.load() - last_yaw;
+      issame = angleyaw >= 0 ? 1 : 0;
+      if(issame){
+        angletimes1++;
+        angletimes2 = 0;
+      }else{
+        angletimes2++;
+        angletimes1 = 0;
+      }
+      if (std::fabs(last_yaw - robo_inf.yaw_angle.load()) > (5 / 180. * M_PI)) {
+        kalman.reset(robo_inf.yaw_angle.load(), std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() * 0.001);
+        last_yaw = robo_inf.yaw_angle.load();
+        std::cout << "reset" << std::endl;
+        cv::putText(src_img, "reset", cv::Point(0, 100), cv::FONT_HERSHEY_DUPLEX, 1,
+                    cv::Scalar(0, 150, 255));
+        resettimes++;
+      } else {
+        std::cout <<"top================"<< isTop <<std::endl; 
+        last_yaw = robo_inf.yaw_angle.load();
+        Eigen::Matrix<double, 1, 1> z_k{robo_inf.yaw_angle.load()};
+        _Kalman::Matrix_x1d         state = kalman.update(z_k, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() * 0.001);
+        // c_speed                           = state(1, 0) * 1.75;
+        c_speed                           = state(1, 0) * 2.2;
+        c_speed                           = (c_speed + last_speed) * 0.5;
+        last_speed                        = c_speed;
+        top_yaw                           = state(0, 0);
+      }
+      
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
       auto res = detect_ball->Detect(src_img);
@@ -59,12 +125,24 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, depth);
 
-        float yaw_compensate =
-            kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
+        std::cout << "c_speed = " << c_speed << std::endl;
+        double predict_time = (depth * 0.001 / 10);
+        double s_yaw        = atan2(predict_time * c_speed * depth * 0.001, 1);
+        compensate_w        = 8 * tan(s_yaw);
+        // compensate_w       *= 1000;
+        compensate_w           = (last_last_compensate_w + last_compensate_w + compensate_w) * 0.333;
+        last_last_compensate_w = last_compensate_w;
+        last_compensate_w      = compensate_w;
+        cv::putText(src_img, std::to_string(compensate_w),
+                    cv::Point(0, 150), cv::FONT_HERSHEY_DUPLEX, 1,
+                    cv::Scalar(0, 150, 255), 1);
+
+        // float yaw_compensate =
+        //     kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
 
         rect_predicted = rect;
-        rect_predicted.x = rect.x + yaw_compensate;
-        pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
+        rect_predicted.x = rect.x - compensate_w;
+        // pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
 
         robo_cmd.pitch_angle.store(angle.x);
         robo_cmd.yaw_angle.store(angle.y);
@@ -214,12 +292,12 @@ int main(int argc, char *argv[]) {
   camera_thread.detach();
   std::thread uart_thread(uartThread, std::ref(robo_cmd), std::ref(robo_inf));
   uart_thread.detach();
-  std::thread clip_camera_thread(ClipBallThread, std::ref(robo_cmd));
-  clip_camera_thread.detach();
+  // std::thread clip_camera_thread(ClipBallThread, std::ref(robo_cmd));
+  // clip_camera_thread.detach();
   if (std::cin.get() == 'q') {
     camera_thread.~thread();
     uart_thread.~thread();
-    clip_camera_thread.~thread();
+    // clip_camera_thread.~thread();
   }
   return 0;
 }
