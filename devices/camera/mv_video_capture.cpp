@@ -109,8 +109,11 @@ bool VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
       CameraSetAeState(hCamera, FALSE);
       CameraSetExposureTime(hCamera, _CAMERA_EXPOSURETIME);
 
-      // 自动白平衡
-      CameraSetWbMode(hCamera, TRUE);
+      // 关闭自动白平衡
+      CameraSetWbMode(hCamera, FALSE);
+
+      // 校准白平衡
+      // CameraSetOnceWB(hCamera);
 
       // 设置颜色增益
       // CameraSetGain(hCamera, 160, 123, 100);
