@@ -46,7 +46,6 @@ class RoboSerial : public serial::Serial {
       this->read(&temp, 1);
     this->read((uint8_t *)&temp_info, sizeof(temp_info));
     robo_inf.yaw_angle.store(temp_info.yaw_angle);
-    std::cout << temp_info.yaw_angle.load() << "\n";
   }
 
  private:
