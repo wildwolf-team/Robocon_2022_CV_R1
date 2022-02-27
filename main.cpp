@@ -62,9 +62,9 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         // rect.height = rect.width;
         rect.width = rect.height;
         pnp->solvePnP(ball_3d_rect, rect, angle, coordinate_mm, depth);
-        float temp {coordinate_mm.x};
-        coordinate_mm.x = coordinate_mm.y;
-        coordinate_mm.y = temp;
+        // float temp {coordinate_mm.x};
+        // coordinate_mm.x = coordinate_mm.y;
+        // coordinate_mm.y = temp;
         // static float ball_speed = 8.f;
         // float pitch_before_compensate {angle.y};
         // std::cout << "pitch_before_compensate:" << angle.y << "\n";
@@ -73,6 +73,11 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         //函数拟合的弹道补偿
         float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
         angle.y -= pitch_compensate;
+        angle.y = -angle.y;
+        //相机倒置， yaw, pitch 相反
+        float temp_angle_x { angle.x };
+        angle.x = angle.y;
+        angle.y = temp_angle_x;
 
         // float yaw_compensate =
         //     kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
@@ -83,9 +88,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         // robo_cmd.pitch_angle.store(angle.x);
         // robo_cmd.yaw_angle.store(angle.y);
 
-        //相机倒置， yaw, pitch 相反
-        robo_cmd.pitch_angle.store(-angle.y);
-        robo_cmd.yaw_angle.store(angle.x);
+        robo_cmd.pitch_angle.store(angle.x);
+        robo_cmd.yaw_angle.store(angle.y);
         robo_cmd.depth.store(depth);
         robo_cmd.detect_object.store(true);
 
@@ -96,8 +100,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
                     cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_DUPLEX, 1.2,
                     cv::Scalar(0, 150, 255), 2);
         cv::putText(src_img,
-                    "pitch:" + std::to_string(-angle.y) +
-                        ", yaw:" + std::to_string(angle.x),
+                    "pitch:" + std::to_string(angle.x) +
+                        ", yaw:" + std::to_string(angle.y),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 150, 255));
 #endif
