@@ -20,7 +20,7 @@
 using namespace std::chrono_literals;
 
 void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
-  int camera_exposure = 500;
+  int camera_exposure = 5000;
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_1024,
                                         camera_exposure);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
@@ -65,7 +65,14 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         float temp {coordinate_mm.x};
         coordinate_mm.x = coordinate_mm.y;
         coordinate_mm.y = temp;
-        solvepnp::FallCompensator(coordinate_mm, 8.f, angle.y);
+        // static float ball_speed = 8.f;
+        // float pitch_before_compensate {angle.y};
+        // std::cout << "pitch_before_compensate:" << angle.y << "\n";
+        // solvepnp::FallCompensator(coordinate_mm, ball_speed, angle.y);
+
+        //函数拟合的弹道补偿
+        float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
+        angle.y -= pitch_compensate;
 
         // float yaw_compensate =
         //     kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
@@ -77,8 +84,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         // robo_cmd.yaw_angle.store(angle.y);
 
         //相机倒置， yaw, pitch 相反
-        robo_cmd.pitch_angle.store(angle.y);
-        robo_cmd.yaw_angle.store(-angle.x);
+        robo_cmd.pitch_angle.store(-angle.y);
+        robo_cmd.yaw_angle.store(angle.x);
         robo_cmd.depth.store(depth);
         robo_cmd.detect_object.store(true);
 
@@ -89,7 +96,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
                     cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_DUPLEX, 1.2,
                     cv::Scalar(0, 150, 255), 2);
         cv::putText(src_img,
-                    "pitch:" + std::to_string(angle.y) +
+                    "pitch:" + std::to_string(-angle.y) +
                         ", yaw:" + std::to_string(angle.x),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 150, 255));
