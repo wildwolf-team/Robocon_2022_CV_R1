@@ -117,6 +117,7 @@ namespace solvepnp
         void solvePnP(const std::vector<cv::Point3f> object_3d_,
                       const std::vector<cv::Point2f> target_2d_,
                       cv::Point2f &angle,
+                      cv::Point3f &coordinate_mm,
                       float &depth)
         {
             cv::Mat rvec_ = cv::Mat::zeros(3, 3, CV_64FC1);
@@ -134,6 +135,9 @@ namespace solvepnp
 
             cv::Mat ptz = cameraPtz(tvec_);
             const double *xyz = reinterpret_cast<const double *>(ptz.data);
+            coordinate_mm.x = xyz[0];
+            coordinate_mm.y = xyz[1];
+            coordinate_mm.z = xyz[2];
 
             // Yaw
             if (PnP_Config.barrel_ptz_offset_x != 0.f)
@@ -200,12 +204,12 @@ namespace solvepnp
 
             // Depth
             depth = static_cast<float>(sqrt(xyz[2] * xyz[2] + xyz[0] * xyz[0]));
-            FallCompensator(cv::Point3f(xyz[0], xyz[1], xyz[2]), 16.f, angle.x);
         }
 
         void solvePnP(const cv::Rect object_3d_rect,
                       const cv::Rect target_2d_rect_,
                       cv::Point2f &angle,
+                      cv::Point3f &coordinate_mm,
                       float &depth)
         {
             std::vector<cv::Point3f> object_3d_;
@@ -228,7 +232,7 @@ namespace solvepnp
             target_2d_.emplace_back(cv::Point2f(target_2d_rect_.x + target_2d_rect_.width, target_2d_rect_.y));
             target_2d_.emplace_back(cv::Point2f(target_2d_rect_.x, target_2d_rect_.y));
 
-            this->solvePnP(object_3d_, target_2d_, angle, depth);
+            this->solvePnP(object_3d_, target_2d_, angle, coordinate_mm, depth);
         }
 
     private:

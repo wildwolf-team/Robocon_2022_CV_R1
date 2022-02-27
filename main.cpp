@@ -20,8 +20,9 @@
 using namespace std::chrono_literals;
 
 void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
-  mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_800,
-                                        10000);
+  int camera_exposure = 500;
+  mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_1024,
+                                        camera_exposure);
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
   auto detect_ball = std::make_shared<YOLOv5TRT>(
@@ -36,8 +37,9 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   cv::Mat src_img;
   cv::Rect rect;
   cv::Rect rect_predicted;
-  cv::Rect ball_3d_rect(0, 0, 165, 165);
+  cv::Rect ball_3d_rect(0, 0, 140, 140);
   cv::Point2f angle;
+  cv::Point3f coordinate_mm;
   float depth;
 
   // To-do: 异常终端程序后相机自动
@@ -57,19 +59,26 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 #endif
 
       if (rectFilter(res, src_img, rect)) {
-        rect.height = rect.width;
-        pnp->solvePnP(ball_3d_rect, rect, angle, depth);
+        // rect.height = rect.width;
+        rect.width = rect.height;
+        pnp->solvePnP(ball_3d_rect, rect, angle, coordinate_mm, depth);
+        float temp {coordinate_mm.x};
+        coordinate_mm.x = coordinate_mm.y;
+        coordinate_mm.y = temp;
+        solvepnp::FallCompensator(coordinate_mm, 8.f, angle.y);
 
-        float yaw_compensate =
-            kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
+        // float yaw_compensate =
+        //     kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
 
-        rect_predicted = rect;
-        rect_predicted.x = rect.x + yaw_compensate;
-        pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
-        depth = depth / 1.2f;
+        // rect_predicted = rect;
+        // rect_predicted.x = rect.x + yaw_compensate;
+        // pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
+        // robo_cmd.pitch_angle.store(angle.x);
+        // robo_cmd.yaw_angle.store(angle.y);
 
-        robo_cmd.pitch_angle.store(angle.x);
-        robo_cmd.yaw_angle.store(angle.y);
+        //相机倒置， yaw, pitch 相反
+        robo_cmd.pitch_angle.store(angle.y);
+        robo_cmd.yaw_angle.store(-angle.x);
         robo_cmd.depth.store(depth);
         robo_cmd.detect_object.store(true);
 
@@ -80,14 +89,17 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
                     cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_DUPLEX, 1.2,
                     cv::Scalar(0, 150, 255), 2);
         cv::putText(src_img,
-                    "pitch:" + std::to_string(angle.x) +
-                        ", yaw:" + std::to_string(angle.y),
+                    "pitch:" + std::to_string(angle.y) +
+                        ", yaw:" + std::to_string(angle.x),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 150, 255));
 #endif
       } else {
         robo_cmd.detect_object.store(false);
       }
+      cv::transpose(src_img, src_img);
+      cv::flip(src_img, src_img, 1);
+      cv::resize(src_img, src_img, cv::Size(src_img.cols * 0.5, src_img.rows * 0.5));
 #ifndef RELEASE
       if (!src_img.empty()) cv::imshow("img", src_img);
 #endif
