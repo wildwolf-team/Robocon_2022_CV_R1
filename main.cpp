@@ -16,6 +16,7 @@
 #include "devices/new_serial/serial.hpp"
 #include "devices/serial/uart_serial.hpp"
 #include "utils.hpp"
+#include "log/log.hpp"
 
 using namespace std::chrono_literals;
 
