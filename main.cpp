@@ -27,7 +27,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   auto mv_capture = std::make_shared<mindvision::VideoCapture>(camera_params);
 
   auto detect_ball = std::make_shared<YOLOv5TRT>(
-      fmt::format("{}{}", SOURCE_PATH, "/models/RCBall3.engine"));
+      fmt::format("{}{}", SOURCE_PATH, "/models/BALL.engine"));
 
   auto pnp = std::make_shared<solvepnp::PnP>(
       fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
@@ -44,7 +44,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   float depth;
 
   // To-do: 异常终端程序后相机自动
-  while (cv::waitKey(1) != 'q') {
+  while (cv::waitKey(1) != 'q') try {
     if (mv_capture->isindustryimgInput()) {
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
@@ -117,6 +117,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 #endif
       if (cv::waitKey(1) == 'q') break;
     }
+  } catch (const std::exception &e) {
+      fmt::print("{}\n", e.what());
   }
 }
 
