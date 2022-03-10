@@ -43,6 +43,9 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   cv::Point3f coordinate_mm;
   float depth;
 
+  cv::namedWindow("interface");
+  cv::moveWindow("interface", 0, 0);
+
   // To-do: 异常终端程序后相机自动
   while (cv::waitKey(1) != 'q') try {
     if (mv_capture->isindustryimgInput()) {
@@ -108,7 +111,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       }
       cv::resize(src_img, src_img, cv::Size(src_img.cols * 0.5, src_img.rows * 0.5));
 #ifndef RELEASE
-      if (!src_img.empty()) cv::imshow("img", src_img);
+      if (!src_img.empty()) cv::imshow("interface", src_img);
 #endif
       if (cv::waitKey(1) == 'q') break;
     }
