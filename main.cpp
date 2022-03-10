@@ -51,6 +51,9 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       auto res = detect_ball->Detect(src_img);
 
 #ifndef RELEASE
+      for (long unsigned int i = 0; i < res.size(); i++)
+        cv::rectangle(src_img, get_rect(src_img, res[i].bbox),
+                      cv::Scalar(0, 255, 0), 2);
       cv::line(src_img, cv::Point(0, src_img.rows / 2),
                cv::Point(src_img.cols, src_img.rows / 2),
                cv::Scalar(0, 150, 255));
