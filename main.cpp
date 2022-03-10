@@ -109,7 +109,6 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       } else {
         robo_cmd.detect_object.store(false);
       }
-      cv::resize(src_img, src_img, cv::Size(src_img.cols * 0.5, src_img.rows * 0.5));
 #ifndef RELEASE
       if (!src_img.empty()) cv::imshow("interface", src_img);
 #endif
