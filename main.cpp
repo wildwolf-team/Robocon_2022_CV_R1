@@ -63,8 +63,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 #endif
 
       if (rectFilter(res, src_img, rect)) {
-        // rect.height = rect.width;
-        rect.width = rect.height;
+        rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, coordinate_mm, depth);
         // float temp {coordinate_mm.x};
         // coordinate_mm.x = coordinate_mm.y;
@@ -76,12 +75,7 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 
         //函数拟合的弹道补偿
         float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
-        angle.y -= pitch_compensate;
-        angle.y = -angle.y;
-        //相机倒置， yaw, pitch 相反
-        float temp_angle_x { angle.x };
-        angle.x = angle.y;
-        angle.y = temp_angle_x;
+        angle.x -= pitch_compensate;
 
         // float yaw_compensate =
         //     kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
@@ -112,8 +106,6 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       } else {
         robo_cmd.detect_object.store(false);
       }
-      cv::transpose(src_img, src_img);
-      cv::flip(src_img, src_img, 1);
       cv::resize(src_img, src_img, cv::Size(src_img.cols * 0.5, src_img.rows * 0.5));
 #ifndef RELEASE
       if (!src_img.empty()) cv::imshow("img", src_img);
