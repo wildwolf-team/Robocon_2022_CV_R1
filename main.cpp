@@ -48,8 +48,10 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   cv::Point3f coordinate_mm;
   float depth;
 
+#ifndef RELEASE
   cv::namedWindow("interface");
-  cv::moveWindow("interface", 0, 0);
+  cv::moveWindow("interface", 10, 10);
+#endif
 
   // To-do: 异常终端程序后相机自动
   while (cv::waitKey(1) != 'q') try {
@@ -57,18 +59,6 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
       auto res = detect_ball->Detect(src_img);
-
-#ifndef RELEASE
-      for (long unsigned int i = 0; i < res.size(); i++)
-        cv::rectangle(src_img, get_rect(src_img, res[i].bbox),
-                      cv::Scalar(0, 255, 0), 2);
-      cv::line(src_img, cv::Point(0, src_img.rows / 2),
-               cv::Point(src_img.cols, src_img.rows / 2),
-               cv::Scalar(0, 150, 255));
-      cv::line(src_img, cv::Point(src_img.cols / 2, 0),
-               cv::Point(src_img.cols / 2, src_img.rows),
-               cv::Scalar(0, 150, 255));
-#endif
 
       if (rectFilter(res, src_img, rect)) {
         rect.height = rect.width;
@@ -102,6 +92,17 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         robo_cmd.detect_object.store(true);
 
 #ifndef RELEASE
+        //画出中心点
+        for (long unsigned int i = 0; i < res.size(); i++)
+          cv::rectangle(src_img, get_rect(src_img, res[i].bbox),
+                        cv::Scalar(0, 255, 0), 2);
+        cv::line(src_img, cv::Point(0, src_img.rows / 2),
+                cv::Point(src_img.cols, src_img.rows / 2),
+                cv::Scalar(0, 150, 255));
+        cv::line(src_img, cv::Point(src_img.cols / 2, 0),
+                cv::Point(src_img.cols / 2, src_img.rows),
+                cv::Scalar(0, 150, 255));
+
         cv::rectangle(src_img, rect, cv::Scalar(0, 150, 255), 2);
         cv::rectangle(src_img, rect_predicted, cv::Scalar(255, 0, 150), 2);
         cv::putText(src_img, std::to_string(depth),
