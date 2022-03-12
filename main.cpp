@@ -127,6 +127,18 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
   }
 }
 
+void targetCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
+  cv::VideoCapture target_camera(0);
+  cv::Mat src_img;
+
+  while (true) try {
+    target_camera >> src_img;
+    usleep(1);
+  } catch (const std::exception &e) {
+      fmt::print("{}\n", e.what());
+  }
+}
+
 void uartWriteThread(const std::shared_ptr<RoboSerial>& serial, RoboCmd &robo_cmd) {
   while (true) {
     try {
@@ -211,14 +223,18 @@ void uartThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
 int main(int argc, char *argv[]) {
   RoboCmd robo_cmd;
   RoboInf robo_inf;
-  std::thread camera_thread(PTZCameraThread, std::ref(robo_cmd),
+  std::thread ptz_camera_thread(PTZCameraThread, std::ref(robo_cmd),
                             std::ref(robo_inf));
-  camera_thread.detach();
+  ptz_camera_thread.detach();
   std::thread uart_thread(uartThread, std::ref(robo_cmd), std::ref(robo_inf));
   uart_thread.detach();
+  std::thread target_camera_thread(targetCameraThread, std::ref(robo_cmd),
+                            std::ref(robo_inf));
+  target_camera_thread.detach();
   if (std::cin.get() == 'q') {
-    camera_thread.~thread();
+    ptz_camera_thread.~thread();
     uart_thread.~thread();
+    target_camera_thread.~thread();
   }
   return 0;
 }
