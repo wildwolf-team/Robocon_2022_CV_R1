@@ -17,6 +17,7 @@
 #include "devices/serial/uart_serial.hpp"
 #include "utils.hpp"
 #include "log/log.hpp"
+#include "log/rqt_watcher.hpp"
 
 using namespace std::chrono_literals;
 
@@ -34,6 +35,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
 
   auto kalman_prediction = std::make_shared<KalmanPrediction>();
+
+  auto rqt_watcher = std::make_shared<rqtWatcher>("/dev/pts/3", 115200);
 
   cv::Mat src_img;
   cv::Rect rect;
@@ -68,6 +71,8 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
       if (rectFilter(res, src_img, rect)) {
         rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, coordinate_mm, depth);
+
+        // 桂林电子科技大学下坠补偿
         // float temp {coordinate_mm.x};
         // coordinate_mm.x = coordinate_mm.y;
         // coordinate_mm.y = temp;
@@ -80,14 +85,14 @@ void PTZCameraThread(RoboCmd &robo_cmd, RoboInf &robo_inf) {
         float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
         angle.x -= pitch_compensate;
 
-        // float yaw_compensate =
-        //     kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
+        // kalman 预测
+        rqt_watcher->SendData(robo_inf.yaw_angle.load(), 0x00);
+        float yaw_compensate =
+            kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
 
-        // rect_predicted = rect;
-        // rect_predicted.x = rect.x + yaw_compensate;
-        // pnp->solvePnP(ball_3d_rect, rect_predicted, angle, depth);
-        // robo_cmd.pitch_angle.store(angle.x);
-        // robo_cmd.yaw_angle.store(angle.y);
+        rect_predicted = rect;
+        rect_predicted.x = rect.x + yaw_compensate;
+        pnp->solvePnP(ball_3d_rect, rect_predicted, angle, coordinate_mm, depth);
 
         robo_cmd.pitch_angle.store(angle.x);
         robo_cmd.yaw_angle.store(angle.y);
