@@ -18,8 +18,8 @@ class rqtWatcher : public serial::Serial {
   }
 
   void SendData(float v, char topic_flag) {
-    this->write('S', 1);
-    this->write(topic_flag, 1);
+    this->write((uint8_t *)'S', 1);
+    this->write((uint8_t *)&topic_flag, 1);
     this->write((uint8_t *)&v, sizeof(v));
   }
 };
