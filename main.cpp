@@ -77,18 +77,20 @@ void PTZCameraThread(
         // std::cout << "pitch_before_compensate:" << angle.y << "\n";
         // solvepnp::FallCompensator(coordinate_mm, ball_speed, angle.y);
 
-        //函数拟合的弹道补偿
-        float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
-        angle.x -= pitch_compensate;
-
         // kalman 预测
         float yaw_compensate =
             kalman_prediction->Prediction(robo_inf.yaw_angle.load() - angle.y, depth);
 
         rect_predicted = rect;
-        rect_predicted.x = rect.x + yaw_compensate;
+        rect_predicted.x = rect.x - yaw_compensate;
         pnp->solvePnP(ball_3d_rect, rect_predicted, angle, coordinate_mm,
                       depth);
+
+        // 弹道补偿
+        // float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
+        // float pitch_compensate = depth / 1000 * 1.9529 + 4.4291;
+        float pitch_compensate = depth / 1000 * 1.9529 + 4.2291;
+        angle.x -= pitch_compensate;
 
         robo_cmd.pitch_angle.store(angle.x);
         robo_cmd.yaw_angle.store(angle.y);
