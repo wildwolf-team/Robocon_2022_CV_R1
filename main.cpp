@@ -82,9 +82,8 @@ void PTZCameraThread(
         angle.x -= pitch_compensate;
 
         // kalman 预测
-        rqt_watcher->SendData(robo_inf.yaw_angle.load(), 0x00);
         float yaw_compensate =
-            kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
+            kalman_prediction->Prediction(robo_inf.yaw_angle.load() - angle.y, depth);
 
         rect_predicted = rect;
         rect_predicted.x = rect.x + yaw_compensate;
