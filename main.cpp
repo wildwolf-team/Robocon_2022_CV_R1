@@ -62,11 +62,6 @@ void PTZCameraThread(
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
 
-      std::vector<uchar> buff_bgr;
-      cv::imencode(".jpg", src_img, buff_bgr);
-      streamer_ptr->publish("/ptzcamera",
-                            std::string(buff_bgr.begin(), buff_bgr.end()));
-
       auto res = detect_ball->Detect(src_img);
 
       if (rectFilter(res, src_img, rect)) {
@@ -128,7 +123,13 @@ void PTZCameraThread(
         robo_cmd.detect_object.store(false);
       }
 #ifndef RELEASE
-      if (!src_img.empty()) cv::imshow("interface", src_img);
+      if (!src_img.empty()) {
+        std::vector<uchar> buff_bgr;
+        cv::imencode(".jpg", src_img, buff_bgr);
+        streamer_ptr->publish("/ptzcamera",
+                              std::string(buff_bgr.begin(), buff_bgr.end()));
+        cv::imshow("interface", src_img);
+      }
 #endif
       if (cv::waitKey(1) == 'q') break;
     }
