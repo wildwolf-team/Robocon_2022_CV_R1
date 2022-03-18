@@ -46,7 +46,7 @@ void PTZCameraThread(
   cv::Mat src_img;
   cv::Rect rect;
   cv::Rect rect_predicted;
-  cv::Rect ball_3d_rect(0, 0, 140, 140);
+  cv::Rect ball_3d_rect(0, 0, 150, 150);
   cv::Point2f angle;
   cv::Point3f coordinate_mm;
   float depth;
