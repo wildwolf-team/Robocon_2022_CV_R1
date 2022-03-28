@@ -485,9 +485,9 @@ Serial::SerialImpl::isOpen () const
 size_t
 Serial::SerialImpl::available ()
 {
-  // if (!is_open_) {
-  //   return 0;
-  // }
+  if (!is_open_) {
+    return 0;
+  }
   int count = 0;
   if (-1 == ioctl (fd_, TIOCINQ, &count)) {
       THROW (IOException, errno);
