@@ -10,60 +10,6 @@ namespace solvepnp
     auto idntifier_green = fmt::format(fg(fmt::color::green), "solvePnP");
     auto idntifier_red = fmt::format(fg(fmt::color::red), "solvePnP");
 
-    /**
-     * @brief 桂林电子科技大学下坠补偿
-     * 
-     * @param coordinate_mm 世界坐标系, x 为 相机相对于目标的水平距离, z 为深度
-     * @param shoot_speed 射速
-     * @param pitch_angle 解算的 pitch 轴角度
-     */
-    void FallCompensator(cv::Point3f coordinate_mm, float shoot_speed, float &pitch_angle)
-    {
-        float KAPPA = 0.00045f; //空气阻力系数
-        float M = 0.04f;        //质量
-
-        float x = coordinate_mm.x / 1000.f;
-        float z = coordinate_mm.z / 1000.f;
-        float y = -coordinate_mm.y / 1000.f;
-        float speed = shoot_speed;
-        float p = sqrt(x * x + z * z);
-        float A = sqrt(1 - 2 * p * KAPPA / M);
-        float pitchAngleRef = 0.f; //pitch 补偿大小
-
-        #define GRAVITY 9.80565f
-        float a = -0.5 * GRAVITY * (M * (1 - A) / (KAPPA * speed)) * (M * (1 - A) / (KAPPA * speed));
-        float b = M * (1 - A) / KAPPA;
-        float c = a - y;
-        float delta = b * b - 4 * a * c;
-        float mid = -b / (2 * a);
-        float tanAngleA = 0;
-        float angleA = 0;
-        float tanAngleB = 0;
-        float angleB = 0;
-
-        if (delta < 0) {
-            pitchAngleRef = pitch_angle;
-        }
-        else if (delta == 0) {
-            tanAngleA = mid;
-            pitchAngleRef = atan(tanAngleA) * 180 / CV_PI;
-        }
-        else if (delta > 0) {
-            tanAngleA = mid - sqrt(delta) / (2 * a);
-            angleA = atanf(tanAngleA) * 180 / CV_PI;;
-            tanAngleB = mid + sqrt(delta) / (2 * a);
-            angleB = atan(tanAngleB) * 180 / CV_PI;
-
-            if (tanAngleA >= -1 && tanAngleA <= 1) {
-                pitchAngleRef = atanf(tanAngleA) * 180 / CV_PI;
-            }
-            else if (tanAngleB >= -1 && tanAngleB <= 1) {
-                pitchAngleRef = atan(tanAngleB) * 180 / CV_PI;
-            }
-        }
-        pitch_angle = pitchAngleRef;
-    }
-
     class PnP
     {
     public:

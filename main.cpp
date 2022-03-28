@@ -68,15 +68,6 @@ void PTZCameraThread(
         rect.height = rect.width;
         pnp->solvePnP(ball_3d_rect, rect, angle, coordinate_mm, depth);
 
-        // 桂林电子科技大学下坠补偿
-        // float temp {coordinate_mm.x};
-        // coordinate_mm.x = coordinate_mm.y;
-        // coordinate_mm.y = temp;
-        // static float ball_speed = 8.f;
-        // float pitch_before_compensate {angle.y};
-        // std::cout << "pitch_before_compensate:" << angle.y << "\n";
-        // solvepnp::FallCompensator(coordinate_mm, ball_speed, angle.y);
-
         // kalman 预测
         float yaw_compensate =
             kalman_prediction->Prediction(robo_inf.yaw_angle.load() - angle.y, depth);
