@@ -57,7 +57,7 @@ void PTZCameraThread(
 #endif
 
   // To-do: 异常终端程序后相机自动
-  while (cv::waitKey(1) != 'q') try {
+  while (true) try {
     if (mv_capture->isindustryimgInput()) {
       mv_capture->cameraReleasebuff();
       src_img = mv_capture->image();
@@ -123,7 +123,7 @@ void PTZCameraThread(
         cv::imshow("interface", src_img);
       }
 #endif
-      if (cv::waitKey(1) == 'q') break;
+      usleep(1);
     }
   } catch (const std::exception &e) {
     fmt::print("{}\n", e.what());
