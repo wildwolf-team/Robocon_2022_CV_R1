@@ -118,7 +118,7 @@ void PTZCameraThread(
       if (!src_img.empty()) {
         std::vector<uchar> buff_bgr;
         cv::imencode(".jpg", src_img, buff_bgr);
-        streamer_ptr->publish("/ptzcamera",
+        streamer_ptr->publish("/pc",
                               std::string(buff_bgr.begin(), buff_bgr.end()));
       }
 #endif
