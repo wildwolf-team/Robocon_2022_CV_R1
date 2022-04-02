@@ -120,7 +120,6 @@ void PTZCameraThread(
         cv::imencode(".jpg", src_img, buff_bgr);
         streamer_ptr->publish("/ptzcamera",
                               std::string(buff_bgr.begin(), buff_bgr.end()));
-        cv::imshow("interface", src_img);
       }
 #endif
       usleep(1);
