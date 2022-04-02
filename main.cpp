@@ -172,6 +172,20 @@ void uartReadThread(const std::shared_ptr<RoboSerial> &serial,
     }
 }
 
+void watchDogThread(std::thread &ptz_camera_thread,
+                    std::thread &uartWriteThread) {
+  while (true)
+  {
+    if(ptz_camera_thread.joinable()) {
+      ptz_camera_thread.detach();
+    }
+    if(uartWriteThread.joinable()) {
+      uartWriteThread.detach();
+    }
+    sleep(1);
+  }
+}
+
 int main(int argc, char *argv[]) {
   RoboCmd robo_cmd;
   RoboInf robo_inf;
@@ -191,12 +205,9 @@ int main(int argc, char *argv[]) {
                                 std::ref(robo_inf), std::ref(streamer_ptr));
   ptz_camera_thread.detach();
 
-  if (std::cin.get() == 'q') {
-    ptz_camera_thread.~thread();
-    uart_write_thread.~thread();
-    uart_read_thread.~thread();
-    streamer_ptr->stop();
-  }
+  std::thread watch_dog_thread(watchDogThread, std::ref(ptz_camera_thread),
+                               std::ref(uart_read_thread));
+  watch_dog_thread.join();
 
   return 0;
 }
