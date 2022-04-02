@@ -78,9 +78,7 @@ void PTZCameraThread(
                       depth);
 
         // 弹道补偿
-        // float pitch_compensate = depth / 1000 * 2.8174 + 5.9662;
-        // float pitch_compensate = depth / 1000 * 1.9529 + 4.4291;
-        float pitch_compensate = depth / 1000 * 1.9529 + 4.2291;
+        float pitch_compensate = depth / 1000 * 1.9529 + 6.9291;
         angle.x -= pitch_compensate;
 
         robo_cmd.pitch_angle.store(angle.x);
