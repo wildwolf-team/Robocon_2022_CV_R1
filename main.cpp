@@ -129,45 +129,6 @@ void PTZCameraThread(
   }
 }
 
-void targetCameraThread(
-    RoboCmd &robo_cmd, RoboInf &robo_inf,
-    const std::shared_ptr<nadjieb::MJPEGStreamer> &streamer_ptr) {
-  cv::VideoCapture target_camera(0);
-
-  auto detect_ball = std::make_shared<YOLOv5TRT>(
-      fmt::format("{}{}", SOURCE_PATH, "/models/BALL.engine"));
-
-  auto pnp = std::make_shared<solvepnp::PnP>(
-      fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
-      fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
-
-  cv::Mat src_img;
-  cv::Rect rect;
-  cv::Rect ball_3d_rect(0, 0, 140, 140);
-  cv::Point2f angle;
-  cv::Point3f coordinate_mm;
-  float depth;
-
-  while (true) try {
-    target_camera >> src_img;
-
-    std::vector<uchar> buff_targetcamera;
-    cv::imencode(".jpg", src_img, buff_targetcamera);
-    streamer_ptr->publish(
-      "/targetcamera",
-      std::string(buff_targetcamera.begin(), buff_targetcamera.end()));
-
-    auto res = detect_ball->Detect(src_img);
-    if (rectFilter(res, src_img, rect)) {
-      pnp->solvePnP(ball_3d_rect, rect, angle, coordinate_mm, depth);
-    }
-
-    usleep(1);
-  } catch (const std::exception &e) {
-    fmt::print("{}\n", e.what());
-  }
-}
-
 void uartWriteThread(const std::shared_ptr<RoboSerial> &serial,
                      RoboCmd &robo_cmd) {
   while (true) try {
@@ -232,15 +193,10 @@ int main(int argc, char *argv[]) {
                                 std::ref(robo_inf), std::ref(streamer_ptr));
   ptz_camera_thread.detach();
 
-  std::thread target_camera_thread(targetCameraThread, std::ref(robo_cmd),
-                                   std::ref(robo_inf), std::ref(streamer_ptr));
-  target_camera_thread.detach();
-
   if (std::cin.get() == 'q') {
     ptz_camera_thread.~thread();
     uart_write_thread.~thread();
     uart_read_thread.~thread();
-    target_camera_thread.~thread();
     streamer_ptr->stop();
   }
 
