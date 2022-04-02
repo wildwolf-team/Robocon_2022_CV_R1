@@ -137,7 +137,7 @@ void uartWriteThread(const std::shared_ptr<RoboSerial> &serial,
       } else {
         serial->open();
       }
-      std::this_thread::sleep_for(1ms);
+      std::this_thread::sleep_for(10ms);
     } catch (const std::exception &e) {
       serial->close();
       static int serial_read_excepted_times{0};
