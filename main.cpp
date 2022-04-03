@@ -51,11 +51,6 @@ void PTZCameraThread(
   cv::Point3f coordinate_mm;
   float depth;
 
-#ifndef RELEASE
-  cv::namedWindow("interface");
-  cv::moveWindow("interface", 10, 10);
-#endif
-
   // To-do: 异常终端程序后相机自动
   while (true) try {
     if (mv_capture->isindustryimgInput()) {
