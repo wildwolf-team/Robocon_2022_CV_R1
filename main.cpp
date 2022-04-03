@@ -39,7 +39,6 @@ void PTZCameraThread(
 
   auto kalman_prediction = std::make_shared<KalmanPrediction>();
 
-  auto rqt_watcher = std::make_shared<rqtWatcher>("/dev/pts/3", 115200);
   auto log =
       std::make_shared<Log::log>(fmt::format("{}{}", SOURCE_PATH, "/log.txt"));
 
