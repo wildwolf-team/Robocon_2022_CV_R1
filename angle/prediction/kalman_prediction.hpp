@@ -47,8 +47,7 @@ class KalmanPrediction : public Kalman<1, S> {
     double c_speed = state(1, 0);
     c_speed = (c_speed + last_speed) * 0.5;
     last_speed = c_speed;
-    std::cout << "c_speed = " << c_speed << std::endl;
-    double predict_time = depth * 0.001 / 6 ;
+    double predict_time = depth * 0.001 / 7;
     double s_yaw        = atan2(predict_time * c_speed * depth * 0.001, 1);
     compensate_w = 8 * tan(s_yaw);
     compensate_w *= 1000;
