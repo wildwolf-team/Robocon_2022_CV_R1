@@ -697,7 +697,7 @@ class Publisher : public nadjieb::utils::NonCopyable, public nadjieb::utils::Run
 
             std::string res_str
                 = "--nadjiebmjpegstreamer\r\n"
-                  "Content-Type: image/jpeg\r\n"
+                  "Content-Type: text/html\r\n"
                   "Content-Length: "
                   + std::to_string(payload.second.size()) + "\r\n\r\n" + payload.second;
 
@@ -737,7 +737,11 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
    public:
     virtual ~MJPEGStreamer() { stop(); }
 
-    void start(int port, int num_workers = 1) {
+    void start(int port, const std::string static_html_path, int num_workers = 1) {
+        std::ifstream ifs(static_html_path);
+        static_html_content_.assign((std::istreambuf_iterator<char>(ifs)),
+                                    (std::istreambuf_iterator<char>()));
+
         publisher_.start(num_workers);
         listener_.withOnMessageCallback(on_message_cb_).withOnBeforeCloseCallback(on_before_close_cb_).runAsync(port);
 
@@ -753,6 +757,33 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
 
     void publish(const std::string& path, const std::string& buffer) { publisher_.enqueue(path, buffer); }
 
+template <typename T>
+    void publish_text_value(const std::string &div_id, const T &value,
+                            const std::string &path="/iframe") {
+        std::string buffer = "<script type=\"text/javascript\">"
+                             "parent.document.getElementById(\'" + 
+                             div_id + "\').innerHTML = \"" + std::to_string(value) +
+                             "\"</script>";
+        publisher_.enqueue(path, buffer); 
+    }
+
+template <typename T>
+    void publish_charts_value(const std::string &chart_js_class_name,
+                              const T &value,
+                              const std::string &path="/iframe") {
+        std::string buffer = "<script>"
+                             "window.parent." + chart_js_class_name + ".update(" +
+                             std::to_string(value) + ");"
+                             "</script>";
+        publisher_.enqueue(path, buffer); 
+    }
+
+    void publish_console_log(const std::string &message, const std::string &path="/iframe") {
+        std::string buffer = "<script type=\"text/javascript\">"
+                             "window.parent.console.log(\'" + message + "\')</script>";
+        publisher_.enqueue(path, buffer); 
+    }
+
     void setShutdownTarget(const std::string& target) { shutdown_target_ = target; }
 
     bool isRunning() { return (publisher_.isRunning() && listener_.isRunning()); }
@@ -760,6 +791,7 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
     bool hasClient(const std::string& path) { return publisher_.hasClient(path); }
 
    private:
+    std::string static_html_content_;
     nadjieb::net::Listener listener_;
     nadjieb::net::Publisher publisher_;
     std::string shutdown_target_ = "/shutdown";
@@ -781,6 +813,19 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
             publisher_.stop();
 
             cb_res.end_listener = true;
+            return cb_res;
+        }
+
+        if(req.getTarget() == "/") {
+            nadjieb::net::HTTPResponse main_res;
+            main_res.setVersion(req.getVersion());
+            main_res.setStatusCode(200);
+            main_res.setStatusText("OK");
+            main_res.setValue("Connection", "close");
+            main_res.setBody(static_html_content_);
+            auto main_res_str = main_res.serialize();
+            nadjieb::net::sendViaSocket(sockfd, main_res_str.c_str(), main_res_str.size(), 0);
+
             return cb_res;
         }
 
@@ -806,6 +851,8 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
         init_res.setValue("Cache-Control", "no-cache, no-store, must-revalidate, pre-check=0, post-check=0, max-age=0");
         init_res.setValue("Pragma", "no-cache");
         init_res.setValue("Content-Type", "multipart/x-mixed-replace; boundary=nadjiebmjpegstreamer");
+        if(req.getTarget() == "/iframe") 
+            init_res.setValue("Content-Type", "text/html; boundary=nadjiebmjpegstreamer");
         auto init_res_str = init_res.serialize();
 
         nadjieb::net::sendViaSocket(sockfd, init_res_str.c_str(), init_res_str.size(), 0);

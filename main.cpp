@@ -64,6 +64,8 @@ void PTZCameraThread(
         // kalman 预测
         float yaw_compensate =
             kalman_prediction->Prediction(robo_inf.yaw_angle.load() - angle.y, depth);
+        streamer_ptr->publish_charts_value("echartb", robo_inf.yaw_angle.load());
+        streamer_ptr->publish_text_value("imu_angle", robo_inf.yaw_angle.load());
 
         rect_predicted = rect;
         rect_predicted.x = rect.x - yaw_compensate;
@@ -101,6 +103,8 @@ void PTZCameraThread(
                         ", yaw:" + std::to_string(angle.y),
                     cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
                     cv::Scalar(0, 150, 255), 2);
+        streamer_ptr->publish_text_value("yaw_angle",angle.y);
+        streamer_ptr->publish_text_value("pitch_angle",angle.x);
 #endif
       } else {
         robo_cmd.detect_object.store(false);
@@ -186,7 +190,7 @@ int main(int argc, char *argv[]) {
   RoboInf robo_inf;
 
   auto streamer_ptr = std::make_shared<nadjieb::MJPEGStreamer>();
-  streamer_ptr->start(8080);
+  streamer_ptr->start(8080, fmt::format("{}{}", SOURCE_PATH, "/utils/streamer.html"));
 
   auto serial = std::make_shared<RoboSerial>("/dev/ch340g", 115200);
 
