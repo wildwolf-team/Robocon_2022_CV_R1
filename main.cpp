@@ -16,8 +16,8 @@
 #include "devices/new_serial/serial.hpp"
 #include "devices/serial/uart_serial.hpp"
 #include "log/log.hpp"
+#include "streamer/mjpeg_streamer.hpp"
 #include "utils.hpp"
-#include "utils/mjpeg_streamer.hpp"
 
 using namespace std::chrono_literals;
 

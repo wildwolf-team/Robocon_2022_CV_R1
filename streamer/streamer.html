@@ -1,7 +1,7 @@
 <html>
   <body>
     <!-- mjpeg streamer -->
-    <img src="/pc">
+    <img src="/pc" style="width:640px;height:512px;">
     <p>yaw angle</p>
     <div id="yaw_angle"></div>
     <p>pitch angle</p>
@@ -9,7 +9,7 @@
     <p>imu angle</p>
     <div id="imu_angle"></div>
     <!-- chart -->
-    <div id="yaw_after_kalman_chart" style="width:600px;height:400px;"></div>
+    <div id="pnp_yaw_chart" style="width:600px;height:400px;"></div>
     <div id="yaw_angle_chart" style="width:600px;height:400px;"></div>
     <!-- iframe streamer -->
     <iframe src="/iframe" style="display:none"></iframe>
@@ -93,7 +93,7 @@ class charts {
 };
 
 // init chart
-var echarta = new charts("yaw_after_kalman_chart", "yaw_after_kalman");
+var echarta = new charts("pnp_yaw_chart", "pnp_yaw_chart");
 var echartb = new charts("yaw_angle_chart", "imu_yaw_angle");
 
   </script>
