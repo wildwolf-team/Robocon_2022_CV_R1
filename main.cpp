@@ -108,8 +108,7 @@ void PTZCameraThread(
 #endif
       } else {
         robo_cmd.detect_object.store(false);
-        float yaw_compensate =
-            kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
+        kalman_prediction->Prediction(robo_inf.yaw_angle.load(), depth);
       }
 #ifndef RELEASE
       if (!src_img.empty()) {
