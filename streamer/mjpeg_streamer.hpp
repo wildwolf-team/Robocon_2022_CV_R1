@@ -52,6 +52,7 @@ SOFTWARE.
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <fstream>
 
 // Reference https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages#http_requests
 
