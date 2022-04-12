@@ -1,9 +1,11 @@
 #pragma once
 #include "serial/serial.h"
-#include "utils.hpp"
+#include "robo_data.h"
 
+namespace serial {
 auto idntifier_green = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "serial");
 auto idntifier_red   = fmt::format(fg(fmt::color::red)   | fmt::emphasis::bold, "serial");
+}
 
 class RoboSerial : public serial::Serial {
  public:
@@ -14,9 +16,9 @@ class RoboSerial : public serial::Serial {
     this->setTimeout(timeout);
     try {
       this->open();
-      fmt::print("[{}] Serial init successed.\n", idntifier_green);
+      fmt::print("[{}] Serial init successed.\n", serial::idntifier_green);
     } catch(const std::exception& e) {
-      fmt::print("[{}] Serial init failed, {}.\n", idntifier_red, e.what());
+      fmt::print("[{}] Serial init failed, {}.\n", serial::idntifier_red, e.what());
     }
   }
 

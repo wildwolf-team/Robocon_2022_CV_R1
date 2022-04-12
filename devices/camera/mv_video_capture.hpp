@@ -114,6 +114,10 @@ class VideoCapture {
    */
   inline cv::Mat image() const { return cv::cvarrToMat(iplImage, true); }
 
+  inline bool isOpen() {
+    return iscamera0_open;
+  }
+
  private:
   unsigned char* g_pRgbBuffer;
 

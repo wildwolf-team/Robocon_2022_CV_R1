@@ -1,3 +1,4 @@
+#pragma once
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -95,7 +96,7 @@ class YOLOv5TRT {
         cudaMalloc((void**)&img_device, MAX_IMAGE_INPUT_SIZE_THRESH * 3));
   }
 
-  std::vector<Yolo::Detection> Detect(cv::Mat img) {
+  std::vector<Yolo::Detection> Detect(const cv::Mat &img) {
     if (img.empty()) fmt::print("fail to read img.");
     float* buffer_idx = (float*)buffers[inputIndex];  // new<----
     imgs_buffer[0] = img;                             // new<----
