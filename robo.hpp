@@ -28,7 +28,7 @@ class RoboR1 {
   std::unique_ptr<YOLOv5TRT> yolo_detection_;
   std::unique_ptr<solvepnp::PnP> pnp_;
   std::unique_ptr<KalmanPrediction> kalman_prediction_;
-  std::unique_ptr<nadjieb::MJPEGStreamer> streamer_;
+  std::unique_ptr<RoboStreamer> streamer_;
 
   std::thread uartWriteThread_;
   std::thread uartReadThread_;
@@ -63,7 +63,7 @@ RoboR1::RoboR1() {
                                             camera_exposure);
       camera_ = std::make_unique<mindvision::VideoCapture>(camera_params);
       serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
-      streamer_ = std::make_unique<nadjieb::MJPEGStreamer>();
+      streamer_ = std::make_unique<RoboStreamer>();
   } catch (const std::exception &e) {
     fmt::print("[{}] {}", fmt::format(fg(fmt::color::red) |
                fmt::emphasis::bold, "construct"), e.what());
@@ -135,6 +135,7 @@ void RoboR1::detection() {
   cv::Rect target_rect;
   cv::Rect target_rect_predicted;
   cv::Rect target_rect_3d(0, 0, 150, 150);
+  cv::Point2f detection_pnp_angle;
   cv::Point2f target_pnp_angle;
   cv::Point3f target_pnp_coordinate_mm;
   float depth;
@@ -147,13 +148,13 @@ void RoboR1::detection() {
 
       if (rectFilter(res, src_img, target_rect)) {
         target_rect.height = target_rect.width;
-        pnp_->solvePnP(target_rect_3d, target_rect, target_pnp_angle,
+        pnp_->solvePnP(target_rect_3d, target_rect, detection_pnp_angle,
                              target_pnp_coordinate_mm, depth);
 
         // kalman 预测
         float kalman_yaw_compensate =
         kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
-                                             target_pnp_angle.y, depth);
+                                             detection_pnp_angle.y, depth);
         streamer_->publish_charts_value("echarta", robo_inf.yaw_angle.load());
         streamer_->publish_text_value("imu_angle",
                                             robo_inf.yaw_angle.load());
@@ -199,6 +200,13 @@ void RoboR1::detection() {
                     cv::Scalar(0, 150, 255), 2);
         streamer_->publish_text_value("yaw_angle",target_pnp_angle.y);
         streamer_->publish_text_value("pitch_angle",target_pnp_angle.x);
+        // 目标不动和跟踪目标过程为发射时机
+        if((abs(detection_pnp_angle.y) < 0.5f && abs(target_pnp_angle.y) < 0.5f) ||
+           (detection_pnp_angle.y < -0.5f && target_pnp_angle.y > 0.5f) ||
+           (detection_pnp_angle.y > 0.5f && target_pnp_angle.y < -0.5f))
+          streamer_->call_html_js_function("setReadytoShootGreen");
+        else
+          streamer_->call_html_js_function("setReadytoShootRed");
       } else {
         robo_cmd.detect_object.store(false);
         kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
