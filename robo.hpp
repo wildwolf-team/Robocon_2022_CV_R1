@@ -43,6 +43,7 @@ class RoboR1 {
   void uartRead();
   void detection();
   void watchDog();
+  void stop();
   ~RoboR1();
 };
 
@@ -74,6 +75,7 @@ void RoboR1::Init() {
   uartReadThread_ = std::thread([&]{uartRead();});
   detectionThread_ = std::thread([&]{detection();});
   watchDogThread_ = std::thread([&]{watchDog();});
+
   try {
     if(!streamer_->isRunning())
       streamer_->start(8080, SOURCE_PATH "/streamer/streamer.html");
@@ -225,6 +227,19 @@ void RoboR1::watchDog() {
       detectionThread_.detach();
     std::this_thread::sleep_for(1000ms);
   }
+  try {
+    serial_->close();
+    streamer_->stop();
+  } catch (const std::exception& e) {
+    fmt::print("{}\n", e.what());
+  }
+}
+
+void RoboR1::stop(){
+  if (!end_node_) {
+    end_node_ = true;
+  }
+  fmt::print("node stop.");
 }
 
 RoboR1::~RoboR1() {}
