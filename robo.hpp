@@ -24,7 +24,7 @@ class RoboR1 {
   RoboInf robo_inf;
 
   std::unique_ptr<RoboSerial> serial_;
-  std::unique_ptr<mindvision::VideoCapture> camera_;
+  std::shared_ptr<mindvision::VideoCapture> camera_;
   std::unique_ptr<YOLOv5TRT> yolo_detection_;
   std::unique_ptr<solvepnp::PnP> pnp_;
   std::unique_ptr<KalmanPrediction> kalman_prediction_;
@@ -61,9 +61,9 @@ RoboR1::RoboR1() {
     int camera_exposure = 5000;
     mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_1024,
                                             camera_exposure);
-      camera_ = std::make_unique<mindvision::VideoCapture>(camera_params);
-      serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
-      streamer_ = std::make_unique<RoboStreamer>();
+    camera_ = std::make_shared<mindvision::VideoCapture>(camera_params);
+    serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
+    streamer_ = std::make_unique<RoboStreamer>();
   } catch (const std::exception &e) {
     fmt::print("[{}] {}", fmt::format(fg(fmt::color::red) |
                fmt::emphasis::bold, "construct"), e.what());
@@ -71,10 +71,8 @@ RoboR1::RoboR1() {
 }
 
 void RoboR1::Init() {
-  uartWriteThread_ = std::thread([&]{uartWrite();});
-  uartReadThread_ = std::thread([&]{uartRead();});
-  detectionThread_ = std::thread([&]{detection();});
-  watchDogThread_ = std::thread([&]{watchDog();});
+  streamer_->setStopNodeFuncPtr(std::bind(&RoboR1::stop, this));
+  streamer_->setCameraSetExposureFuncPtr(std::bind(&mindvision::VideoCapture::setCameraExposureTime, camera_, std::placeholders::_1));
 
   try {
     if(!streamer_->isRunning())

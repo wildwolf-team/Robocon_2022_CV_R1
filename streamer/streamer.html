@@ -9,6 +9,8 @@
     <div id="pitch_angle"></div>
     <p>imu angle</p>
     <div id="imu_angle"></div>
+    <input type="text" id="camera_exposure">
+    <button onclick="setCameraExposure()">setCameraExposure</button>
     <!-- chart -->
     <div id="yaw_angle_chart" style="width:600px;height:400px;"></div>
     <!-- iframe streamer -->
@@ -104,5 +106,12 @@ function setReadytoShootRed() {
   document.getElementById('ready_to_shoot').style.backgroundColor = 'red';
 }
 
+function setCameraExposure() {
+  var dom = document.getElementById('camera_exposure');
+  var httpRequest = new XMLHttpRequest();
+  httpRequest.open('POST', 'setCameraExposure', true);
+  httpRequest.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+  httpRequest.send(dom.value);
+}
   </script>
 </html>

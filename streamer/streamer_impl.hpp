@@ -764,7 +764,7 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
 
     bool hasClient(const std::string& path) { return publisher_.hasClient(path); }
 
-    virtual bool callOutFunc(nadjieb::net::HTTPRequest &req) {}
+    virtual void callOutFunc(nadjieb::net::HTTPRequest &req) {}
 
    private:
     std::string static_html_content_;
