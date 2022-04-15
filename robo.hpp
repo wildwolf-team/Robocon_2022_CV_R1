@@ -30,11 +30,6 @@ class RoboR1 {
   std::unique_ptr<KalmanPrediction> kalman_prediction_;
   std::unique_ptr<RoboStreamer> streamer_;
 
-  std::thread uartWriteThread_;
-  std::thread uartReadThread_;
-  std::thread detectionThread_;
-  std::thread watchDogThread_;
-
  public:
   RoboR1();
   void Init();
@@ -42,7 +37,6 @@ class RoboR1 {
   void uartWrite();
   void uartRead();
   void detection();
-  void watchDog();
   void stop();
   ~RoboR1();
 };
@@ -86,14 +80,28 @@ void RoboR1::Init() {
 }
 
 void RoboR1::Spin() {
-  if (uartWriteThread_.joinable())
-    uartWriteThread_.detach();
-  if (uartReadThread_.joinable())
-    uartReadThread_.detach();
-  if (detectionThread_.joinable())
-    detectionThread_.detach();
-  if (watchDogThread_.joinable())
-    watchDogThread_.join();
+  std::thread uartWriteThread(std::bind(&RoboR1::uartWrite,this));
+  std::thread uartReadThread(std::bind(&RoboR1::uartRead,this));
+  std::thread detectionThread(std::bind(&RoboR1::detection,this));
+
+  while (!end_node_) {
+    if (uartWriteThread.joinable())
+      uartWriteThread.detach();
+    if (uartReadThread.joinable())
+      uartReadThread.detach();
+    if (detectionThread.joinable())
+      detectionThread.detach();
+    std::this_thread::sleep_for(1000ms);
+  }
+
+  try {
+    if(serial_->isOpen())
+      serial_->close();
+    if(streamer_->isRunning())
+      streamer_->stop();
+  } catch (const std::exception& e) {
+    fmt::print("{}\n", e.what());
+  }
 }
 
 void RoboR1::uartRead() {
@@ -220,24 +228,6 @@ void RoboR1::detection() {
       usleep(1);
     }
   } catch (const std::exception &e) {
-    fmt::print("{}\n", e.what());
-  }
-}
-
-void RoboR1::watchDog() {
-  while (!end_node_) {
-    if (uartWriteThread_.joinable())
-      uartWriteThread_.detach();
-    if (uartReadThread_.joinable())
-      uartReadThread_.detach();
-    if (detectionThread_.joinable())
-      detectionThread_.detach();
-    std::this_thread::sleep_for(1000ms);
-  }
-  try {
-    serial_->close();
-    streamer_->stop();
-  } catch (const std::exception& e) {
     fmt::print("{}\n", e.what());
   }
 }
