@@ -130,8 +130,6 @@ class VideoCapture {
   int camera_exposuretime_ = 0;
   mindvision::Camera_Resolution camera_resolution_;
 
-  int  iCameraCounts  = 1;
-  int  iStatus        = -1;
   int  hCamera;
   int  channel        = 3;
   bool is_open_       = false;

@@ -44,22 +44,24 @@ void VideoCapture::operator>>(cv::Mat& img) {
 
 void VideoCapture::open() {
   if(is_open_) {
-    fmt::print("[{}] Error, mindvision industrial camera already open: {}\n", idntifier_red, iCameraCounts);
+    fmt::print("[{}] Error, mindvision industrial camera already open: {}\n", idntifier_red);
   }
   CameraSdkInit(1);
 
-  iStatus = CameraEnumerateDevice(&tCameraEnumList, &iCameraCounts);
+  tSdkCameraDevInfo pCameraList;
+  int piNums {1};
+  int cameraStatus = CameraEnumerateDevice(&pCameraList, &piNums);
 
-  if (iCameraCounts == 0) {
-    fmt::print("[{}] Error, no mindvision industrial camera detected: {}\n", idntifier_red, iCameraCounts);
+  if (piNums == 0) {
+    fmt::print("[{}] Error, no mindvision industrial camera detected: {}\n", idntifier_red);
 
     is_open_ = false;
   } else {
     // 相机初始化
-    iStatus = CameraInit(&tCameraEnumList, -1, -1, &hCamera);
+    cameraStatus = CameraInit(&pCameraList, -1, -1, &hCamera);
 
-    if (iStatus != CAMERA_STATUS_SUCCESS) {
-      fmt::print("[{}] Error, Init mindvision industrial camera failed: {}\n", idntifier_red, iStatus);
+    if (cameraStatus != CAMERA_STATUS_SUCCESS && cameraStatus != CAMERA_STATUS_DEVICE_IS_OPENED) {
+      fmt::print("[{}] Error, Init mindvision industrial camera failed: {}\n", idntifier_red, cameraStatus);
 
       is_open_ = false;
     } else {
@@ -102,7 +104,7 @@ void VideoCapture::open() {
         CameraSetIspOutFormat(hCamera, CAMERA_MEDIA_TYPE_BGR8);
       }
 
-      fmt::print("[{}] Info, Init mindvision industrial camera success: {}\n", idntifier_green, iStatus);
+      fmt::print("[{}] Info, Init mindvision industrial camera success: {}\n", idntifier_green, cameraStatus);
 
       is_open_ = true;
     }
@@ -141,10 +143,10 @@ void VideoCapture::setCameraAnalogGrain(int iAnalogGain) {
 
 void VideoCapture::close() {
   if (is_open_) {
-    CameraUnInit(hCamera);
+    int camera_status = CameraUnInit(hCamera);
     free(g_pRgbBuffer);
 
-    fmt::print("[{}] Released mindvision industrial camera: {}\n", idntifier_green, iStatus);
+    fmt::print("[{}] Released mindvision industrial camera: {}\n", idntifier_green, camera_status);
   }
 }
 
