@@ -79,6 +79,8 @@ void RoboR1::Init() {
   try {
     if(!streamer_->isRunning())
       streamer_->start(8080, SOURCE_PATH "/streamer/streamer.html");
+    if(!camera_->isOpen())
+      camera_->open();
   } catch (const std::exception &e) {
     fmt::print("[{}] {}", fmt::format(fg(fmt::color::red) |
                fmt::emphasis::bold, "init"), e.what());
@@ -140,9 +142,8 @@ void RoboR1::detection() {
   cv::Point3f target_pnp_coordinate_mm;
   float depth;
   while (!end_node_) try {
-    if (camera_->isindustryimgInput()) {
-      camera_->cameraReleasebuff();
-      src_img = camera_->image();
+    if(camera_->isOpen()) {
+      *camera_ >> src_img;
 
       auto res = yolo_detection_->Detect(src_img);
 

@@ -14,56 +14,38 @@ namespace mindvision {
 auto idntifier_green = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "mv_video_capture");
 auto idntifier_red   = fmt::format(fg(fmt::color::red)   | fmt::emphasis::bold, "mv_video_capture");
 
-VideoCapture::VideoCapture(const CameraParam &_camera_param) {
-  if (_camera_param.camera_mode == 0 && cameraInit(_camera_param.resolution.cols,
-               _camera_param.resolution.rows,
-               _camera_param.camera_exposuretime)) {
-    iscamera0_open = true;
-    fmt::print("[{}] Using mindvision industrial camera: {}\n", idntifier_green, _camera_param.camera_mode);
-  } else {
-    iscamera0_open = false;
-
-    fmt::print("[{}] Not using mindvision industrial camera: {}\n", idntifier_red, _camera_param.camera_mode);
-  }
+VideoCapture::VideoCapture(const CameraParam &_camera_param) :
+  camera_exposuretime_(_camera_param.camera_exposuretime),
+  camera_resolution_(_camera_param.resolution) {
 }
 
 VideoCapture::~VideoCapture() {
-  if (iscamera0_open) {
-    CameraUnInit(hCamera);
-    free(g_pRgbBuffer);
-
-    fmt::print("[{}] Released mindvision industrial camera: {}\n", idntifier_green, iStatus);
-  }
+  close();
 }
 
-bool VideoCapture::isindustryimgInput() {
-  bool isindustry_camera_open = false;
+void VideoCapture::operator>>(cv::Mat& img) {
+  if (is_open_ == true &&
+      CameraReleaseImageBuffer(hCamera, pbyBuffer) == CAMERA_STATUS_SUCCESS &&
+      CameraGetImageBuffer(hCamera, &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS) {
+    CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
 
-  if (iscamera0_open == 1) {
-    if (CameraGetImageBuffer(hCamera, &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS) {
-      CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
-
-      if (iplImage) {
-        cvReleaseImageHeader(&iplImage);
-      }
-
-      iplImage =
-        cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, channel);
-
-      cvSetData(iplImage, g_pRgbBuffer, sFrameInfo.iWidth * channel);
+    if (iplImage) {
+      cvReleaseImageHeader(&iplImage);
     }
-
-    isindustry_camera_open = true;
+    iplImage =
+      cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, channel);
+    cvSetData(iplImage, g_pRgbBuffer, sFrameInfo.iWidth * channel);
+    img = cv::cvarrToMat(iplImage, true);
   } else {
-    isindustry_camera_open = false;
+    fmt::print("[{}] read img from camera failed.\n", idntifier_red);
+    is_open_ = false;
   }
-
-  return isindustry_camera_open;
 }
 
-bool VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
-                             const int _CAMERA_RESOLUTION_ROWS,
-                             const int _CAMERA_EXPOSURETIME) {
+void VideoCapture::open() {
+  if(is_open_) {
+    fmt::print("[{}] Error, mindvision industrial camera already open: {}\n", idntifier_red, iCameraCounts);
+  }
   CameraSdkInit(1);
 
   iStatus = CameraEnumerateDevice(&tCameraEnumList, &iCameraCounts);
@@ -71,7 +53,7 @@ bool VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
   if (iCameraCounts == 0) {
     fmt::print("[{}] Error, no mindvision industrial camera detected: {}\n", idntifier_red, iCameraCounts);
 
-    return false;
+    is_open_ = false;
   } else {
     // 相机初始化
     iStatus = CameraInit(&tCameraEnumList, -1, -1, &hCamera);
@@ -79,11 +61,8 @@ bool VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
     if (iStatus != CAMERA_STATUS_SUCCESS) {
       fmt::print("[{}] Error, Init mindvision industrial camera failed: {}\n", idntifier_red, iStatus);
 
-      return false;
+      is_open_ = false;
     } else {
-
-      fmt::print("[{}] Info, Init mindvision industrial camera success: {}\n", idntifier_green, iStatus);
-
       CameraGetCapability(hCamera, &tCapability);
 
       g_pRgbBuffer =
@@ -95,31 +74,21 @@ bool VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
       CameraGetImageResolution(hCamera, &pImageResolution);
 
       pImageResolution.iIndex      = 0xFF;
-      pImageResolution.iWidthFOV   = _CAMERA_RESOLUTION_COLS;
-      pImageResolution.iHeightFOV  = _CAMERA_RESOLUTION_ROWS;
-      pImageResolution.iWidth      = _CAMERA_RESOLUTION_COLS;
-      pImageResolution.iHeight     = _CAMERA_RESOLUTION_ROWS;
-      pImageResolution.iHOffsetFOV = static_cast<int>((1280 - _CAMERA_RESOLUTION_COLS) * 0.5);
-      pImageResolution.iVOffsetFOV = static_cast<int>((1024 - _CAMERA_RESOLUTION_ROWS) * 0.5);
+      pImageResolution.iWidthFOV   = camera_resolution_.cols;
+      pImageResolution.iHeightFOV  = camera_resolution_.rows;
+      pImageResolution.iWidth      = camera_resolution_.cols;
+      pImageResolution.iHeight     = camera_resolution_.rows;
+      pImageResolution.iHOffsetFOV = static_cast<int>((1280 - camera_resolution_.cols) * 0.5);
+      pImageResolution.iVOffsetFOV = static_cast<int>((1024 - camera_resolution_.rows) * 0.5);
 
       CameraSetImageResolution(hCamera, &pImageResolution);
 
       // 设置曝光时间
-      CameraGetAeState(hCamera, &AEstate);
       CameraSetAeState(hCamera, FALSE);
-      CameraSetExposureTime(hCamera, _CAMERA_EXPOSURETIME);
+      CameraSetExposureTime(hCamera, camera_exposuretime_);
 
       // 关闭自动白平衡
       CameraSetWbMode(hCamera, FALSE);
-
-      // 校准白平衡
-      // CameraSetOnceWB(hCamera);
-
-      // 设置颜色增益
-      // CameraSetGain(hCamera, 160, 123, 100);
-
-      // 设置相机增益值
-      CameraSetAnalogGain(hCamera, 10000);
 
       // 让SDK进入工作模式
       CameraPlay(hCamera);
@@ -133,15 +102,54 @@ bool VideoCapture::cameraInit(const int _CAMERA_RESOLUTION_COLS,
         CameraSetIspOutFormat(hCamera, CAMERA_MEDIA_TYPE_BGR8);
       }
 
-      return true;
+      fmt::print("[{}] Info, Init mindvision industrial camera success: {}\n", idntifier_green, iStatus);
+
+      is_open_ = true;
     }
   }
 }
 
-void VideoCapture::cameraReleasebuff() {
-  // After successfully calling CameraGetImageBuffer, CameraReleaseImageBuffer must be called to release the acquired buffer
-  // Otherwise, when CameraGetImageBuffer is called again, the program will hang and block until CameraReleaseImageBuffer is called in another thread
-  if (iscamera0_open) { CameraReleaseImageBuffer(hCamera, pbyBuffer); }
+void VideoCapture::setCameraExposureTime(const int _camera_exposure_time) {
+  camera_exposuretime_ = _camera_exposure_time;
+  if (is_open_) {
+    std::lock_guard<std::mutex> lk(mtx);
+    CameraSetExposureTime(hCamera, camera_exposuretime_);
+  }
+}
+
+// 白平衡校准
+void VideoCapture::setCameraOnceWB() {
+  if (is_open_) {
+    std::lock_guard<std::mutex> lk(mtx);
+    CameraSetOnceWB(hCamera);
+  }
+}
+
+void VideoCapture::setCameraColorGain(int iRGain, int iGGain, int iBGain) {
+  if (is_open_) {
+    std::lock_guard<std::mutex> lk(mtx);
+    CameraSetGain(hCamera, iRGain, iGGain, iBGain);
+  }
+}
+
+void VideoCapture::setCameraAnalogGrain(int iAnalogGain) {
+  if (is_open_) {
+    std::lock_guard<std::mutex> lk(mtx);
+    CameraSetAnalogGain(hCamera, iAnalogGain);
+  }
+}
+
+void VideoCapture::close() {
+  if (is_open_) {
+    CameraUnInit(hCamera);
+    free(g_pRgbBuffer);
+
+    fmt::print("[{}] Released mindvision industrial camera: {}\n", idntifier_green, iStatus);
+  }
+}
+
+bool VideoCapture::isOpen() {
+  return is_open_;
 }
 
 }  // namespace mindvision

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <mutex>
+
 #include <fmt/core.h>
 #include <fmt/color.h>
 
@@ -84,6 +86,9 @@ class VideoCapture {
   explicit VideoCapture(const mindvision::CameraParam &_camera_param);
 
   ~VideoCapture();
+
+  void operator>>(cv::Mat& img);
+
   /**
    * @brief 判断工业相机是否在线
    *
@@ -96,17 +101,8 @@ class VideoCapture {
    * 
    */
   void cameraReleasebuff();
-  /**
-   * @brief 设置相机参数
-   * 
-   * @param _CAMERA_RESOLUTION_COLS  设置相机宽度  
-   * @param _CAMERA_RESOLUTION_ROWS  设置相机高度
-   * @param _CAMERA_EXPOSURETIME     设置相机曝光
-   * @return bool
-   */
-  bool cameraInit(const int _CAMERA_RESOLUTION_COLS,
-                 const int _CAMERA_RESOLUTION_ROWS,
-                 const int _CAMERA_EXPOSURETIME);
+
+  void open();
   /**
    * @brief 返回相机读取图片
    * 
@@ -114,18 +110,31 @@ class VideoCapture {
    */
   inline cv::Mat image() const { return cv::cvarrToMat(iplImage, true); }
 
-  inline bool isOpen() {
-    return iscamera0_open;
-  }
+  void setCameraExposureTime(int _camera_exposure_time);
+
+  void setCameraOnceWB();
+
+  void setCameraColorGain(int iRGain, int iGGain, int iBGain);
+
+  void setCameraAnalogGrain(int iAnalogGain);
+
+  void close();
+
+  bool isOpen();
 
  private:
+  std::mutex mtx;
+
   unsigned char* g_pRgbBuffer;
+
+  int camera_exposuretime_ = 0;
+  mindvision::Camera_Resolution camera_resolution_;
 
   int  iCameraCounts  = 1;
   int  iStatus        = -1;
   int  hCamera;
   int  channel        = 3;
-  bool iscamera0_open = false;
+  bool is_open_       = false;
 
   tSdkCameraDevInfo   tCameraEnumList;
   tSdkCameraCapbility tCapability;
