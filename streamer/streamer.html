@@ -1,18 +1,21 @@
 <html>
+  <aside class="eva-heading" style="position:absolute;left:1160px;">
+    <h1 class="eva-heading__title" >yaw angle</h2>
+    <h2 class="eva-heading__episode-number" id="yaw_angle"></h3>
+    <h1 class="eva-heading__title">pitch angle</h2>
+    <h2 class="eva-heading__episode-number" id="pitch_angle"></h3>
+    <h1 class="eva-heading__title">imu yaw angle</h2>
+    <h2 class="eva-heading__episode-number" id="imu_angle"></h3>
+    <h1 id="ready_to_shoot" class="eva-heading__title">shoot</h3>
+  </aside>
   <body>
     <!-- mjpeg streamer -->
-    <img src="/pc" style="width:640px;height:512px;">
-    <div id="ready_to_shoot" style="width:50px;height:50px"></div>
-    <p>yaw angle</p>
-    <div id="yaw_angle"></div>
-    <p>pitch angle</p>
-    <div id="pitch_angle"></div>
-    <p>imu angle</p>
-    <div id="imu_angle"></div>
+    <img src="/pc" style="width:1152px;height:921.6px;">
+    <br>
     <input type="text" id="camera_exposure">
     <button onclick="setCameraExposure()">setCameraExposure</button>
     <!-- chart -->
-    <div id="yaw_angle_chart" style="width:600px;height:400px;"></div>
+    <!-- <div id="yaw_angle_chart" style="width:600px;height:400px;"></div> -->
     <!-- iframe streamer -->
     <iframe src="/iframe" style="display:none"></iframe>
   </body>
@@ -99,11 +102,11 @@ var echarta = new charts("yaw_angle_chart", "imu_yaw_angle");
 
 // js function
 function setReadytoShootGreen() {
-  document.getElementById('ready_to_shoot').style.backgroundColor = 'green';
+  document.getElementById('ready_to_shoot').style.color = 'green';
 }
 
 function setReadytoShootRed() {
-  document.getElementById('ready_to_shoot').style.backgroundColor = 'red';
+  document.getElementById('ready_to_shoot').style.color = 'red';
 }
 
 function setCameraExposure() {
@@ -114,4 +117,52 @@ function setCameraExposure() {
   httpRequest.send(dom.value);
 }
   </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      background-color: black;
+    }
+
+    .eva-heading {
+      padding: 32px;
+      margin: 0 auto;
+      align-self: baseline;
+      font-family: serif;
+      color: white;
+      text-shadow: 0 0 2px #e19a86, 0 0 1.5px #854535, 0 0 1.5px #5c150c;
+    }
+
+    .eva-heading > h1 {
+      font-size: 500%;
+    }
+
+    .eva-heading > h2 {
+      font-size: 300%;
+    }
+
+    .eva-heading__title {
+      transform: scale(1, 1.5);
+      line-height: 1.2em;
+      letter-spacing: -.03em;
+    }
+
+    .eva-heading__episode-number {
+      font-family: sans-serif;
+      font-size: 180%;
+      transform: scale(1, 1.5);
+      letter-spacing: -.06em;
+      margin: 10px 0 26px 0;
+    }
+
+    .eva-heading__episode-title {
+      transform: scale(1, 1.3);
+      font-size: 170%;
+      line-height: 1em;
+    }
+
+  </style>
 </html>
