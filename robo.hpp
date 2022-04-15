@@ -108,6 +108,9 @@ void RoboR1::uartRead() {
   while (!end_node_) try {
       if(serial_->isOpen()) {
         serial_->ReceiveInfo(robo_inf);
+        streamer_->publish_charts_value("echarta", robo_inf.yaw_angle.load());
+        streamer_->publish_text_value("imu_angle",
+                                      robo_inf.yaw_angle.load());
       }
       std::this_thread::sleep_for(1ms);
     } catch (const std::exception &e) {
@@ -162,9 +165,6 @@ void RoboR1::detection() {
         float kalman_yaw_compensate =
         kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
                                              detection_pnp_angle.y, depth);
-        streamer_->publish_charts_value("echarta", robo_inf.yaw_angle.load());
-        streamer_->publish_text_value("imu_angle",
-                                            robo_inf.yaw_angle.load());
         target_rect_predicted = target_rect;
         target_rect_predicted.x = target_rect.x - kalman_yaw_compensate;
         pnp_->solvePnP(target_rect_3d, target_rect_predicted,
