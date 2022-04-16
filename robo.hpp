@@ -226,6 +226,9 @@ void RoboR1::detection() {
                                  buff_bgr.end()));
       }
       usleep(1);
+    } else {
+      camera_->open();
+      std::this_thread::sleep_for(3000ms);
     }
   } catch (const std::exception &e) {
     fmt::print("{}\n", e.what());
