@@ -12,10 +12,17 @@ class RoboStreamer : public nadjieb::MJPEGStreamer {
     if ((req.getTarget() == "/setCameraExposure") && (req.getMethod() == "POST")){
       camera_set_exposure_func_(stoi(req.getBody()));
     }
+    if ((req.getTarget() == "/setCameraOnceWB")){
+      camera_set_once_wb_func_();
+    }
   }
 
   void setCameraSetExposureFuncPtr(std::function<void(int)> func_ptr) {
     camera_set_exposure_func_ = func_ptr;
+  }
+
+  void setCameraOnceWBFuncPtr(std::function<void(void)> func_ptr) {
+    camera_set_once_wb_func_ = func_ptr;
   }
 
   void setStopNodeFuncPtr(std::function<void(void)> func_ptr) {
