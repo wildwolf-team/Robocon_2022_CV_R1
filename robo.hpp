@@ -211,7 +211,7 @@ void RoboR1::detection() {
         if((abs(detection_pnp_angle.y) < 0.5f && abs(target_pnp_angle.y) < 0.5f) ||
            (detection_pnp_angle.y < -0.5f && target_pnp_angle.y > 0.5f) ||
            (detection_pnp_angle.y > 0.5f && target_pnp_angle.y < -0.5f))
-          streamer_->call_html_js_function("setReadytoShootGreen");
+          streamer_->call_html_js_function("setReadytoShootYellow");
         else
           streamer_->call_html_js_function("setReadytoShootRed");
       } else {
