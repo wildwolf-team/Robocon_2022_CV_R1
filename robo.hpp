@@ -59,7 +59,7 @@ RoboR1::RoboR1() {
     serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
     streamer_ = std::make_unique<RoboStreamer>();
   } catch (const std::exception &e) {
-    fmt::print("[{}] {}", fmt::format(fg(fmt::color::red) |
+    fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
                fmt::emphasis::bold, "construct"), e.what());
   }
 }
@@ -74,7 +74,7 @@ void RoboR1::Init() {
     if(!camera_->isOpen())
       camera_->open();
   } catch (const std::exception &e) {
-    fmt::print("[{}] {}", fmt::format(fg(fmt::color::red) |
+    fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
                fmt::emphasis::bold, "init"), e.what());
   }
 }
