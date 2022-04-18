@@ -26,7 +26,7 @@ class KalmanPrediction : public Kalman<1, S> {
     start = std::chrono::system_clock::now();
   }
 
-  float Prediction(double ptz_yaw_angle, float depth) {
+  float Prediction(double ptz_yaw_angle, float depth, float shoot_speed) {
     auto end = std::chrono::system_clock::now();
     m_yaw = ptz_yaw_angle;
     if (std::fabs(last_yaw - m_yaw) > 5 ) {
@@ -47,7 +47,7 @@ class KalmanPrediction : public Kalman<1, S> {
     double c_speed = state(1, 0);
     c_speed = (c_speed + last_speed) * 0.5;
     last_speed = c_speed;
-    double predict_time = depth * 0.001 / 7;
+    double predict_time = depth * 0.001 / shoot_speed;
     double s_yaw        = atan2(predict_time * c_speed * depth * 0.001, 1);
     compensate_w = 8 * tan(s_yaw);
     compensate_w *= 1000;
