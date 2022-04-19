@@ -18,6 +18,7 @@
 class RoboR1 {
  private:
   bool end_node_{false};
+  bool is_kalman_open_{false};
 
   RoboCmd robo_cmd;
   RoboInf robo_inf;
@@ -282,19 +283,25 @@ void RoboR1::detection() {
 
             streamer_->publish_text_value("yaw_angle",target_pnp_angle.y);
             streamer_->publish_text_value("pitch_angle",target_pnp_angle.x);
-            robo_cmd.pitch_angle.store(detection_pnp_angle.x);
-            robo_cmd.yaw_angle.store(detection_pnp_angle.y);
-            // robo_cmd.pitch_angle.store(target_rect.x);
-            // robo_cmd.yaw_angle.store(target_rect.y);
+            if(!is_kalman_open_) {
+              robo_cmd.pitch_angle.store(detection_pnp_angle.x);
+              robo_cmd.yaw_angle.store(detection_pnp_angle.y);
+            } else {
+              robo_cmd.pitch_angle.store(target_rect.x);
+              robo_cmd.yaw_angle.store(target_rect.y);
+            }
             robo_cmd.depth.store(depth);
             robo_cmd.detect_object.store(true);
             lose_target_times = 0;
           } else {
             if(lose_target_times++ < 5) {
-              robo_cmd.pitch_angle.store(detection_pnp_angle.x);
-              robo_cmd.yaw_angle.store(detection_pnp_angle.y);
-              // robo_cmd.pitch_angle.store(target_rect.x);
-              // robo_cmd.yaw_angle.store(target_rect.y);
+              if(!is_kalman_open_) {
+                robo_cmd.pitch_angle.store(detection_pnp_angle.x);
+                robo_cmd.yaw_angle.store(detection_pnp_angle.y);
+              } else {
+                robo_cmd.pitch_angle.store(target_rect.x);
+                robo_cmd.yaw_angle.store(target_rect.y);
+              }
               robo_cmd.depth.store(depth);
               robo_cmd.detect_object.store(true);
               // kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
