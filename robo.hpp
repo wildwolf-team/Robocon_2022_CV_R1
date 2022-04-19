@@ -65,7 +65,11 @@ RoboR1::RoboR1() {
 
 void RoboR1::Init() {
   streamer_->setStopNodeFuncPtr(std::bind(&RoboR1::stop, this));
-  streamer_->setCameraSetExposureFuncPtr(std::bind(&mindvision::VideoCapture::setCameraExposureTime, camera_, std::placeholders::_1));
+  streamer_->setCameraSetExposureFuncPtr(std::bind(
+    &mindvision::VideoCapture::setCameraExposureTime, camera_,
+    std::placeholders::_1));
+  streamer_->setCameraOnceWBFuncPtr(
+    std::bind(&mindvision::VideoCapture::setCameraOnceWB, camera_));
 
   try {
     if(!streamer_->isRunning())
