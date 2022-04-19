@@ -335,7 +335,7 @@ void RoboR1::stop(){
   if (!end_node_) {
     end_node_ = true;
   }
-  fmt::print("node stop.");
+  fmt::print("node stop.\n");
 }
 
 RoboR1::~RoboR1() {}
