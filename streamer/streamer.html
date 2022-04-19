@@ -102,12 +102,11 @@ class charts {
 var echarta = new charts("yaw_angle_chart", "imu_yaw_angle");
 
 // js function
-function setReadytoShootYellow() {
-  document.getElementById('ready_to_shoot').style.color = 'yellow';
-}
-
-function setReadytoShootRed() {
-  document.getElementById('ready_to_shoot').style.color = 'red';
+function ReadytoShoot(flag) {
+  if(flag)
+    document.getElementById('ready_to_shoot').style.color = 'yellow';
+  else
+    document.getElementById('ready_to_shoot').style.color = 'red';
 }
 
 function setCameraExposure() {

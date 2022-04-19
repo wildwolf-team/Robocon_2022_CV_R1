@@ -74,7 +74,7 @@ template <typename... Args>
     std::string buffer =
       "<script type=\"text/javascript\">"
       "window.parent." +
-      func_name + "()</script>";
+      func_name + "</script>";
     this->publish(path, buffer);
   }
 
