@@ -122,6 +122,10 @@ class VideoCapture {
 
   bool isOpen();
 
+  int getImageCols();
+
+  int getImageRows();
+
  private:
   std::mutex mtx;
 

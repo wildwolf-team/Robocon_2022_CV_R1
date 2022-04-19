@@ -12,7 +12,6 @@
 #include "devices/camera/mv_video_capture.hpp"
 #include "devices/new_serial/serial.hpp"
 #include "robo_data.h"
-#include "robo_utils.hpp"
 #include "streamer/mjpeg_streamer.hpp"
 #include "TensorRTx/yolov5.hpp"
 
@@ -142,10 +141,16 @@ void RoboR1::uartWrite() {
 }
 
 void RoboR1::detection() {
+  int lose_target_times{0};
   cv::Mat src_img;
   cv::Rect target_rect;
   cv::Rect target_rect_predicted;
   cv::Rect target_rect_3d(0, 0, 150, 150);
+  cv::Rect detect_rect_region(camera_->getImageCols() / 3,
+                              camera_->getImageRows() / 5 * 3,
+                              camera_->getImageCols() / 3,
+                              camera_->getImageRows() / 5);
+  cv::Rect follow_rect_region(detect_rect_region);
   cv::Point2f detection_pnp_angle;
   cv::Point2f target_pnp_angle;
   cv::Point3f target_pnp_coordinate_mm;
@@ -153,77 +158,164 @@ void RoboR1::detection() {
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
-
-      auto res = yolo_detection_->Detect(src_img);
-
-      if (rectFilter(res, src_img, target_rect)) {
-        target_rect.height = target_rect.width;
-        pnp_->solvePnP(target_rect_3d, target_rect, detection_pnp_angle,
-                             target_pnp_coordinate_mm, depth);
-
-        // kalman 预测
-        float kalman_yaw_compensate =
-        kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
-                                             detection_pnp_angle.y, depth);
-        target_rect_predicted = target_rect;
-        target_rect_predicted.x = target_rect.x - kalman_yaw_compensate;
-        pnp_->solvePnP(target_rect_3d, target_rect_predicted,
-                             target_pnp_angle, target_pnp_coordinate_mm,
-                             depth);
-
-        // 弹道补偿
-        float pitch_compensate = depth / 1000 * 1.9529 + 5.9291;
-        target_pnp_angle.x -= pitch_compensate;
-
-        robo_cmd.pitch_angle.store(target_pnp_angle.x);
-        robo_cmd.yaw_angle.store(target_pnp_angle.y);
-        robo_cmd.depth.store(depth);
-        robo_cmd.detect_object.store(true);
-
-        // 画出所有检测目标
-        for (long unsigned int i = 0; i < res.size(); i++)
-          cv::rectangle(src_img, get_rect(src_img, res[i].bbox),
-                        cv::Scalar(0, 255, 0), 2);
-        // 画出十字线条
-        cv::line(src_img, cv::Point(0, src_img.rows / 2),
-                cv::Point(src_img.cols, src_img.rows / 2),
-                cv::Scalar(0, 150, 255), 2);
-        cv::line(src_img, cv::Point(src_img.cols / 2, 0),
-                    cv::Point(src_img.cols / 2, src_img.rows),
-                    cv::Scalar(0, 150, 255), 2);
-
-        // 画出瞄准目标、经过预测的目标, yaw, pitch
-        cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 5);
-        cv::rectangle(src_img, target_rect_predicted, cv::Scalar(255, 0, 150),
-                      5);
-        cv::putText(src_img, std::to_string(depth),
-                    cv::Point(target_rect.x, target_rect.y - 1),
-                    cv::FONT_HERSHEY_DUPLEX,
-                    1.2, cv::Scalar(0, 150, 255), 2);
-        cv::putText(src_img,
-                    "pitch:" + std::to_string(target_pnp_angle.x) +
-                    ", yaw:" + std::to_string(target_pnp_angle.y),
-                    cv::Point(0, 50), cv::FONT_HERSHEY_DUPLEX, 1,
-                    cv::Scalar(0, 150, 255), 2);
-        streamer_->publish_text_value("yaw_angle",target_pnp_angle.y);
-        streamer_->publish_text_value("pitch_angle",target_pnp_angle.x);
-        // 目标不动和跟踪目标过程为发射时机
-        if((abs(detection_pnp_angle.y) < 0.5f && abs(target_pnp_angle.y) < 0.5f) ||
-           (detection_pnp_angle.y < -0.5f && target_pnp_angle.y > 0.5f) ||
-           (detection_pnp_angle.y > 0.5f && target_pnp_angle.y < -0.5f))
-          streamer_->call_html_js_function("setReadytoShootYellow");
-        else
-          streamer_->call_html_js_function("setReadytoShootRed");
+      if(!robo_inf.following.load()) {
+        cv::Mat detect_roi_region = src_img(detect_rect_region);
+        cv::Mat detect_roi_region_clone = detect_roi_region.clone();
+        auto res = yolo_detection_->Detect(detect_roi_region_clone);
+        cv::rectangle(src_img, detect_rect_region,
+          cv::Scalar(0, 150, 255), 5);
+        if(!res.empty()) {
+          std::vector<cv::Rect> detection_rects;
+          for(auto& i : res) {
+            cv::Rect rect = get_rect(detect_roi_region, i.bbox);
+            rect.x = rect.x + detect_rect_region.x;
+            rect.y = rect.y + detect_rect_region.y;
+            cv::rectangle(src_img, rect, cv::Scalar(0, 255, 0), 2);
+            cv::putText(src_img, std::to_string(i.conf),
+                        cv::Point(rect.x, rect.y - 1),
+                        cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0, 150, 255));
+            if(i.conf < 0.3)
+              continue;
+            if(rect.width / rect.height > 1.2f ||
+               rect.width / rect.height < 0.8f)
+              continue;
+            detection_rects.push_back(rect);
+          }
+          if(detection_rects.size() > 0) {
+            if(detection_rects.size() > 1) {
+              std::sort(detection_rects.begin(), detection_rects.end(),
+                [=](cv::Rect rc_i, cv::Rect rc_j)
+                {return abs(src_img.cols / 2 - rc_i.x) <
+                abs(src_img.cols / 2 - rc_j.x);});
+              std::sort(detection_rects.begin(), detection_rects.end(),
+                [=](cv::Rect rc_i, cv::Rect rc_j)
+                {return abs(src_img.rows / 2 - rc_i.y) <
+                abs(src_img.rows / 2 - rc_j.y);});
+            }
+            target_rect = detection_rects[0];
+            target_rect.height = target_rect.width;
+            cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 2);
+          }
+        }
+        follow_rect_region = detect_rect_region;
       } else {
-        robo_cmd.detect_object.store(false);
-        kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
+        cv::Mat detect_roi_region = src_img(follow_rect_region);
+        cv::Mat detect_roi_region_clone = detect_roi_region.clone();
+        auto res = yolo_detection_->Detect(detect_roi_region_clone);
+        cv::rectangle(src_img, follow_rect_region, cv::Scalar(0, 150, 255), 5);
+        if(!res.empty()) {
+          std::vector<cv::Rect> detection_rects;
+          for(auto& i : res) {
+            cv::Rect rect = get_rect(detect_roi_region, i.bbox);
+            rect.x = rect.x + follow_rect_region.x;
+            rect.y = rect.y + follow_rect_region.y;
+            cv::rectangle(src_img, rect, cv::Scalar(0, 255, 0), 2);
+            cv::putText(src_img, std::to_string(i.conf),
+                        cv::Point(rect.x, rect.y - 1),
+                        cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0, 150, 255));
+            if(i.conf < 0.3)
+              continue;
+            if(rect.width / rect.height > 1.2f ||
+               rect.width / rect.height < 0.8f)
+              continue;
+            detection_rects.push_back(rect);
+          }
+          if(detection_rects.size() > 0) {
+            if(detection_rects.size() > 1) {
+              std::sort(detection_rects.begin(), detection_rects.end(),
+                [=](cv::Rect rc_i, cv::Rect rc_j)
+                {return abs(src_img.cols / 2 - rc_i.x) <
+                abs(src_img.cols / 2 - rc_j.x);});
+              std::sort(detection_rects.begin(), detection_rects.end(),
+                [=](cv::Rect rc_i, cv::Rect rc_j)
+                {return abs(src_img.rows / 2 - rc_i.y) <
+                abs(src_img.rows / 2 - rc_j.y);});
+            }
+            target_rect = detection_rects[0];
+            target_rect.height = target_rect.width;
+            follow_rect_region.x = target_rect.x + target_rect.width / 2
+                                   - follow_rect_region.width / 2;
+            follow_rect_region.y = target_rect.y + target_rect.height / 2
+                                   - follow_rect_region.height / 2;
+            if(follow_rect_region.x < 0)
+              follow_rect_region.x = 0;
+            if(follow_rect_region.y < 0)
+              follow_rect_region.y = 0;
+            if(follow_rect_region.x + follow_rect_region.width > src_img.cols)
+              follow_rect_region.x = src_img.cols - follow_rect_region.width;
+            if(follow_rect_region.y + follow_rect_region.height > src_img.rows)
+              follow_rect_region.y = src_img.rows - follow_rect_region.height;
+            cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 2);
+            pnp_->solvePnP(target_rect_3d, target_rect, detection_pnp_angle,
+                                target_pnp_coordinate_mm, depth);
+            cv::putText(src_img, std::to_string(depth),
+                        cv::Point(target_rect.x, target_rect.y +
+                                  target_rect.height - 1),
+                        cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0, 150, 255));
+
+            // kalman 预测
+            float kalman_yaw_compensate =
+            kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
+                                          detection_pnp_angle.y, depth, 9.f);
+            target_rect_predicted = target_rect;
+            target_rect_predicted.x = target_rect.x - kalman_yaw_compensate;
+            pnp_->solvePnP(target_rect_3d, target_rect_predicted,
+                          target_pnp_angle, target_pnp_coordinate_mm,
+                          depth);
+            cv::rectangle(src_img, target_rect_predicted,
+                          cv::Scalar(255, 0, 150), 5);
+
+            // 弹道补偿
+            float pitch_compensate = depth / 1000 * 1.9529 + 5.9291;
+            target_pnp_angle.x -= pitch_compensate;
+
+            if((abs(detection_pnp_angle.y) < 1.f && abs(target_pnp_angle.y) < 1.f) ||
+              (detection_pnp_angle.y < -0.5f && target_pnp_angle.y > 0.5f) ||
+              (detection_pnp_angle.y > 0.5f && target_pnp_angle.y < -0.5f))
+              streamer_->call_html_js_function("setReadytoShootYellow");
+            else
+              streamer_->call_html_js_function("setReadytoShootRed");
+
+            streamer_->publish_text_value("yaw_angle",target_pnp_angle.y);
+            streamer_->publish_text_value("pitch_angle",target_pnp_angle.x);
+            robo_cmd.pitch_angle.store(detection_pnp_angle.x);
+            robo_cmd.yaw_angle.store(detection_pnp_angle.y);
+            // robo_cmd.pitch_angle.store(target_rect.x);
+            // robo_cmd.yaw_angle.store(target_rect.y);
+            robo_cmd.depth.store(depth);
+            robo_cmd.detect_object.store(true);
+            lose_target_times = 0;
+          } else {
+            if(lose_target_times++ < 5) {
+              robo_cmd.pitch_angle.store(detection_pnp_angle.x);
+              robo_cmd.yaw_angle.store(detection_pnp_angle.y);
+              // robo_cmd.pitch_angle.store(target_rect.x);
+              // robo_cmd.yaw_angle.store(target_rect.y);
+              robo_cmd.depth.store(depth);
+              robo_cmd.detect_object.store(true);
+              // kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
+            } else {
+              robo_cmd.pitch_angle.store(0.f);
+              robo_cmd.yaw_angle.store(0.f);
+              robo_cmd.detect_object.store(false);
+              // kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
+            }
+          }
+        }
       }
       if (!src_img.empty()) {
+        // 准星
+        cv::line(src_img, cv::Point(0, src_img.rows / 2),
+                 cv::Point(src_img.cols, src_img.rows / 2),
+                 cv::Scalar(0, 150, 255), 2);
+        cv::line(src_img, cv::Point(src_img.cols / 2, 0),
+                 cv::Point(src_img.cols / 2, src_img.rows),
+                 cv::Scalar(0, 150, 255), 2);
         std::vector<uchar> buff_bgr;
         cv::imencode(".jpg", src_img, buff_bgr);
         streamer_->publish("/pc",
-                                 std::string(buff_bgr.begin(),
-                                 buff_bgr.end()));
+                           std::string(buff_bgr.begin(),
+                           buff_bgr.end()));
       }
       usleep(1);
     } else {

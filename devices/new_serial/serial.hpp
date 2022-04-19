@@ -40,6 +40,7 @@ class RoboSerial : public serial::Serial {
       this->read(&temp, 1);
     this->read((uint8_t *)&robo_inf_uart_temp, sizeof(robo_inf_uart_temp));
     robo_inf.yaw_angle.store(robo_inf_uart_temp.yaw_angle);
+    robo_inf.following.store(robo_inf_uart_temp.following);
   }
 
  private:

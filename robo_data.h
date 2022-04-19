@@ -10,6 +10,7 @@ struct RoboCmd {
 
 struct RoboInf {
   std::atomic<float> yaw_angle = 0;
+  std::atomic<bool> following = false;
 };
 
 struct RoboCmdUartBuff{
@@ -23,4 +24,5 @@ struct RoboCmdUartBuff{
 
 struct RoboInfUartBuff {
   float yaw_angle = 0;
+  bool following = false;
 } __attribute__((packed));

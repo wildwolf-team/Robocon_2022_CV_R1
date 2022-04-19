@@ -154,4 +154,12 @@ bool VideoCapture::isOpen() {
   return is_open_;
 }
 
+int VideoCapture::getImageCols() {
+  return camera_resolution_.cols;
+}
+
+int VideoCapture::getImageRows() {
+  return camera_resolution_.rows;
+}
+
 }  // namespace mindvision
