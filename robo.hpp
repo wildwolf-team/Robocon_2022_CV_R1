@@ -43,7 +43,7 @@ class RoboR1 {
 
 using namespace std::chrono_literals;
 
-RoboR1::RoboR1() {
+RoboR1::RoboR1() try {
   yolo_detection_ = std::make_unique<YOLOv5TRT>(
     fmt::format("{}{}", SOURCE_PATH, "/models/ball.engine"));
   pnp_ = std::make_unique<solvepnp::PnP>(
@@ -51,20 +51,18 @@ RoboR1::RoboR1() {
     fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
   kalman_prediction_ = std::make_unique<KalmanPrediction>();
 
-  try {
     int camera_exposure = 5000;
     mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_1024,
                                             camera_exposure);
     camera_ = std::make_shared<mindvision::VideoCapture>(camera_params);
     serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
     streamer_ = std::make_unique<RoboStreamer>();
-  } catch (const std::exception &e) {
-    fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
-               fmt::emphasis::bold, "construct"), e.what());
-  }
+} catch (const std::exception &e) {
+  fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
+              fmt::emphasis::bold, "construct"), e.what());
 }
 
-void RoboR1::Init() {
+void RoboR1::Init() try {
   streamer_->setStopNodeFuncPtr(std::bind(&RoboR1::stop, this));
   streamer_->setCameraSetExposureFuncPtr(std::bind(
     &mindvision::VideoCapture::setCameraExposureTime, camera_,
@@ -72,15 +70,13 @@ void RoboR1::Init() {
   streamer_->setCameraOnceWBFuncPtr(
     std::bind(&mindvision::VideoCapture::setCameraOnceWB, camera_));
 
-  try {
-    if(!streamer_->isRunning())
-      streamer_->start(8080, SOURCE_PATH "/streamer/streamer.html");
-    if(!camera_->isOpen())
-      camera_->open();
-  } catch (const std::exception &e) {
-    fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
-               fmt::emphasis::bold, "init"), e.what());
-  }
+  if(!streamer_->isRunning())
+    streamer_->start(8080, SOURCE_PATH "/streamer/streamer.html");
+  if(!camera_->isOpen())
+    camera_->open();
+} catch (const std::exception &e) {
+  fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
+              fmt::emphasis::bold, "init"), e.what());
 }
 
 void RoboR1::Spin() {
