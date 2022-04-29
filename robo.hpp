@@ -165,7 +165,6 @@ void RoboR1::detection() {
         auto res = yolo_detection_->Detect(detect_roi_region_clone);
         cv::rectangle(src_img, detect_rect_region,
           cv::Scalar(0, 150, 255), 5);
-        if(!res.empty()) {
           std::vector<cv::Rect> detection_rects;
           for(auto& i : res) {
             cv::Rect rect = get_rect(detect_roi_region, i.bbox);
@@ -197,14 +196,15 @@ void RoboR1::detection() {
             target_rect.height = target_rect.width;
             cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 2);
           }
-        }
         follow_rect_region = detect_rect_region;
+        robo_cmd.pitch_angle.store(0.f);
+        robo_cmd.yaw_angle.store(0.f);
+        robo_cmd.detect_object.store(false);
       } else {
         cv::Mat detect_roi_region = src_img(follow_rect_region);
         cv::Mat detect_roi_region_clone = detect_roi_region.clone();
         auto res = yolo_detection_->Detect(detect_roi_region_clone);
         cv::rectangle(src_img, follow_rect_region, cv::Scalar(0, 150, 255), 5);
-        if(!res.empty()) {
           std::vector<cv::Rect> detection_rects;
           for(auto& i : res) {
             cv::Rect rect = get_rect(detect_roi_region, i.bbox);
@@ -256,8 +256,8 @@ void RoboR1::detection() {
 
             // kalman 预测
             float kalman_yaw_compensate =
-            kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
-                                          detection_pnp_angle.y, depth, 9.f);
+              kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
+                                             detection_pnp_angle.y, depth, 16.f);
             target_rect_predicted = target_rect;
             target_rect_predicted.x = target_rect.x - kalman_yaw_compensate;
             pnp_->solvePnP(target_rect_3d, target_rect_predicted,
@@ -280,11 +280,11 @@ void RoboR1::detection() {
             streamer_->publish_text_value("yaw_angle",target_pnp_angle.y);
             streamer_->publish_text_value("pitch_angle",target_pnp_angle.x);
             if(!is_kalman_open_) {
-              robo_cmd.pitch_angle.store(detection_pnp_angle.x);
+              robo_cmd.pitch_angle.store(target_pnp_angle.x);
               robo_cmd.yaw_angle.store(detection_pnp_angle.y);
             } else {
-              robo_cmd.pitch_angle.store(target_rect.x);
-              robo_cmd.yaw_angle.store(target_rect.y);
+              robo_cmd.pitch_angle.store(target_pnp_angle.x);
+              robo_cmd.yaw_angle.store(target_pnp_angle.y);
             }
             robo_cmd.depth.store(depth);
             robo_cmd.detect_object.store(true);
@@ -300,15 +300,12 @@ void RoboR1::detection() {
               }
               robo_cmd.depth.store(depth);
               robo_cmd.detect_object.store(true);
-              // kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
             } else {
               robo_cmd.pitch_angle.store(0.f);
               robo_cmd.yaw_angle.store(0.f);
               robo_cmd.detect_object.store(false);
-              // kalman_prediction_->Prediction(robo_inf.yaw_angle.load(), depth);
             }
           }
-        }
       }
       if (!src_img.empty()) {
         // 准星
