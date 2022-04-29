@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <exception>
+#include <cmath>
 
 #include <opencv2/opencv.hpp>
 #include <fmt/color.h>
@@ -266,7 +267,10 @@ void RoboR1::detection() {
                           cv::Scalar(255, 0, 150), 5);
 
             // 弹道补偿
-            float pitch_compensate = depth / 1000 * 1.9529 + 5.9291;
+            float depth_m = depth / 1000;
+            float pitch_compensate = -0.2077 * pow(depth_m, 4) + 3.8399 *
+                                     pow(depth_m, 3) - 26.063 * pow(depth_m, 2) +
+                                     77.736 * depth_m - 77.57;
             target_pnp_angle.x -= pitch_compensate;
 
             if((abs(detection_pnp_angle.y) < 1.f && abs(target_pnp_angle.y) < 1.f) ||
