@@ -26,7 +26,7 @@ VideoCapture::~VideoCapture() {
 void VideoCapture::operator>>(cv::Mat& img) {
   if (is_open_ == true &&
       CameraReleaseImageBuffer(hCamera, pbyBuffer) == CAMERA_STATUS_SUCCESS &&
-      CameraGetImageBuffer(hCamera, &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS) {
+      CameraGetImageBuffer(hCamera, &sFrameInfo, &pbyBuffer, 5000) == CAMERA_STATUS_SUCCESS) {
     CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
 
     if (iplImage) {
