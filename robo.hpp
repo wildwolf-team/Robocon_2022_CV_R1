@@ -108,7 +108,6 @@ void RoboR1::uartRead() {
   while (!end_node_) try {
       if(serial_->isOpen()) {
         serial_->ReceiveInfo(robo_inf);
-        streamer_->publish_charts_value("echarta", robo_inf.yaw_angle.load());
         streamer_->publish_text_value("imu_angle",
                                       robo_inf.yaw_angle.load());
       }
