@@ -295,11 +295,11 @@ void RoboR1::detection() {
           } else {
             if(lose_target_times++ < 5) {
               if(!is_kalman_open_) {
-                robo_cmd.pitch_angle.store(detection_pnp_angle.x);
+                robo_cmd.pitch_angle.store(target_pnp_angle.x);
                 robo_cmd.yaw_angle.store(detection_pnp_angle.y);
               } else {
-                robo_cmd.pitch_angle.store(target_rect.x);
-                robo_cmd.yaw_angle.store(target_rect.y);
+                robo_cmd.pitch_angle.store(target_pnp_angle.x);
+                robo_cmd.yaw_angle.store(target_pnp_angle.y);
               }
               robo_cmd.depth.store(depth);
               robo_cmd.detect_object.store(true);
