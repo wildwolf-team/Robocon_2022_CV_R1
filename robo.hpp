@@ -141,6 +141,7 @@ void RoboR1::uartWrite() {
 }
 
 void RoboR1::detection() {
+  float pnp_yaw_factor{1.03f}; // pnp 修正倍率
   int lose_target_times{0};
   cv::Mat src_img;
   cv::Rect target_rect;
@@ -248,6 +249,7 @@ void RoboR1::detection() {
             cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 2);
             pnp_->solvePnP(target_rect_3d, target_rect, detection_pnp_angle,
                                 target_pnp_coordinate_mm, depth);
+            detection_pnp_angle.y *= pnp_yaw_factor;
             cv::putText(src_img, std::to_string(depth),
                         cv::Point(target_rect.x, target_rect.y +
                                   target_rect.height - 1),
@@ -262,6 +264,7 @@ void RoboR1::detection() {
             pnp_->solvePnP(target_rect_3d, target_rect_predicted,
                           target_pnp_angle, target_pnp_coordinate_mm,
                           depth);
+            target_pnp_angle.y *= pnp_yaw_factor;
             cv::rectangle(src_img, target_rect_predicted,
                           cv::Scalar(255, 0, 150), 5);
 
