@@ -112,7 +112,6 @@ void RoboR1::uartRead() {
         streamer_->publish_text_value("imu_angle",
                                       robo_inf.yaw_angle.load());
       }
-      std::this_thread::sleep_for(1ms);
     } catch (const std::exception &e) {
       std::this_thread::sleep_for(1000ms);
     }
