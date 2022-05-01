@@ -267,9 +267,12 @@ void RoboR1::detection() {
 
             // 弹道补偿
             float depth_m = depth / 1000;
-            float pitch_compensate = -0.2077 * pow(depth_m, 4) + 3.8399 *
-                                     pow(depth_m, 3) - 26.063 * pow(depth_m, 2) +
-                                     77.736 * depth_m - 77.57;
+            float pitch_compensate = -0.0294f * float(pow(depth_m, 6)) +
+                                     0.8118f * float(pow(depth_m, 5)) -
+                                     9.2449f * float(pow(depth_m, 4)) +
+                                     55.925f * float(pow(depth_m, 3)) -
+                                     190.32f * float(pow(depth_m, 2)) +
+                                     347.f * depth_m - 257.12f;
             target_pnp_angle.x -= pitch_compensate;
 
             if((abs(detection_pnp_angle.y) < 1.f && abs(target_pnp_angle.y) < 1.f) ||
