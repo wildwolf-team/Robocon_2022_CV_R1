@@ -19,10 +19,13 @@ struct RoboCmdUartBuff{
   float pitch_angle;
   float depth;
   uint8_t detect_object;
+  uint8_t crc8x;
   uint8_t end = (unsigned)'E';
 } __attribute__((packed));
 
 struct RoboInfUartBuff {
   float yaw_angle = 0;
   bool following = false;
+  uint8_t crc8x{0x00};
+  uint8_t end{0x00};
 } __attribute__((packed));
