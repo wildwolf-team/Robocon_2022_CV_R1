@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5)
 
-project(Robocon_2022_CV_R1)
+project(robocon_2022_cv_r1)
 
 add_definitions(-DAPI_EXPORTS)
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
@@ -8,34 +8,32 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED -pthread")
 
 # add_definitions(-DRELEASE)
+set(SRCS
+    main.cpp
+    devices/camera/mv_video_capture.cpp
+    devices/serial/uart_serial.cpp)
+add_executable(${PROJECT_NAME} ${SRCS})
 
-add_executable(Robocon_2022_CV_R1 main.cpp)
-include_directories(${PROJECT_SOURCE_DIR})
-
-#OpenCV
 find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
-target_link_libraries(Robocon_2022_CV_R1 ${OpenCV_LIBS})
-
-#fmt
 find_package(fmt REQUIRED)
-target_link_libraries(Robocon_2022_CV_R1 fmt::fmt)
-
-#Egien
 find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-target_link_libraries(Robocon_2022_CV_R1 ${EIGEN3_LIBS})
+include_directories(
+    ${PROJECT_SOURCE_DIR}
+    ${OpenCV_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} fmt::fmt ${EIGEN3_LIBS})
+
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs sensor_msgs cv_bridge)
 
 #Camera
 add_library(MVSDK SHARED IMPORTED)
-add_library(Camera devices/camera/mv_video_capture.cpp)
 set(MIMDVISION_SDK_LIBRARY /lib/libMVSDK.so)
 set_property(TARGET MVSDK PROPERTY IMPORTED_LOCATION ${MIMDVISION_SDK_LIBRARY})
-target_link_libraries(Robocon_2022_CV_R1 Camera MVSDK)
-
-#Uart
-add_library(serial devices/serial/uart_serial.cpp)
-target_link_libraries(Robocon_2022_CV_R1 serial)
+target_link_libraries(${PROJECT_NAME} MVSDK)
 
 # new serial
 set(serial_SRCS
@@ -47,7 +45,7 @@ set(serial_SRCS
 )
 include_directories(devices/new_serial)
 add_library(new_serial ${serial_SRCS})
-target_link_libraries(Robocon_2022_CV_R1 new_serial)
+target_link_libraries(${PROJECT_NAME} new_serial)
 
 #TensorRTx
 find_package(CUDA REQUIRED)
@@ -57,15 +55,13 @@ link_directories(/usr/local/cuda11.6/lib64)
 # tensorrt
 include_directories(/usr/include/x86_64-linux-gnu/)
 link_directories(/usr/lib/x86_64-linux-gnu/)
-
 cuda_add_library(myplugins SHARED TensorRTx/yololayer.cu)
 target_link_libraries(myplugins nvinfer cudart)
-
 cuda_add_library(TensorRTx SHARED TensorRTx/calibrator.cpp TensorRTx/yolov5.hpp TensorRTx/preprocess.cu)
 target_link_libraries(TensorRTx nvinfer cudart myplugins ${OpenCV_LIBS})
-target_link_libraries(Robocon_2022_CV_R1 TensorRTx)
+target_link_libraries(${PROJECT_NAME} TensorRTx)
 
 set(CONFIG_FILE_PATH ${PROJECT_SOURCE_DIR}/configs)
 set(SOURCE_PATH ${PROJECT_SOURCE_DIR})
-target_compile_definitions(Robocon_2022_CV_R1 PRIVATE "CONFIG_FILE_PATH=\"${CONFIG_FILE_PATH}\"")
-target_compile_definitions(Robocon_2022_CV_R1 PRIVATE "SOURCE_PATH=\"${PROJECT_SOURCE_DIR}\"")
+target_compile_definitions(${PROJECT_NAME} PRIVATE "CONFIG_FILE_PATH=\"${CONFIG_FILE_PATH}\"")
+target_compile_definitions(${PROJECT_NAME} PRIVATE "SOURCE_PATH=\"${PROJECT_SOURCE_DIR}\"")

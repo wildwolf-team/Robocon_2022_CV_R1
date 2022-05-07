@@ -4,7 +4,10 @@
 #include <exception>
 #include <cmath>
 
+#include <rclcpp/rclcpp.hpp>
+#include "std_msgs/msg/float32.hpp"
 #include <opencv2/opencv.hpp>
+#define FMT_HEADER_ONLY
 #include <fmt/color.h>
 #include <fmt/core.h>
 
@@ -24,6 +27,7 @@ class RoboR1 {
   RoboCmd robo_cmd;
   RoboInf robo_inf;
 
+  rclcpp::Node::SharedPtr n_;
   std::unique_ptr<RoboSerial> serial_;
   std::shared_ptr<mindvision::VideoCapture> camera_;
   std::unique_ptr<YOLOv5TRT> yolo_detection_;
@@ -347,3 +351,26 @@ void RoboR1::stop(){
 }
 
 RoboR1::~RoboR1() {}
+
+namespace myrobo {
+  struct ROSDebugPublisher{
+    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> yaw_detect_publisher;
+    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> pitch_detect_publisher;
+    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> kalman_in_publisher;
+    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> imu_yaw_publisher;
+    ROSDebugPublisher(rclcpp::Node::SharedPtr n_){
+      yaw_detect_publisher =
+        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/yaw",
+          rclcpp::QoS(rclcpp::KeepAll()));
+      pitch_detect_publisher =
+        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/yaw",
+          rclcpp::QoS(rclcpp::KeepAll()));
+      kalman_in_publisher =
+        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/yaw",
+          rclcpp::QoS(rclcpp::KeepAll()));
+      imu_yaw_publisher =
+        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/yaw",
+          rclcpp::QoS(rclcpp::KeepAll()));
+    }
+  };
+}
