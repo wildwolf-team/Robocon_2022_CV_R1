@@ -145,7 +145,7 @@ void RoboR1::uartWrite() {
 }
 
 void RoboR1::detection() {
-  float pnp_yaw_factor{1.03f}; // pnp 修正倍率
+  float pnp_yaw_factor{1.05f}; // pnp 修正倍率
   int lose_target_times{0};
   cv::Mat src_img;
   cv::Rect target_rect;
