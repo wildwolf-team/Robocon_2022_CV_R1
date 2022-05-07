@@ -22,7 +22,7 @@
 class RoboR1 {
  private:
   bool end_node_{false};
-  bool is_kalman_open_{false};
+  bool is_kalman_open_{true};
 
   RoboCmd robo_cmd;
   RoboInf robo_inf;
