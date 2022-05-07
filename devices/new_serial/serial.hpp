@@ -1,10 +1,11 @@
 #pragma once
 #include "serial/serial.h"
 #include "robo_data.h"
+#include <fmt/color.h>
 
 namespace serial {
-auto idntifier_green = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "serial");
-auto idntifier_red   = fmt::format(fg(fmt::color::red)   | fmt::emphasis::bold, "serial");
+const auto idntifier_green = fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "serial");
+const auto idntifier_red   = fmt::format(fg(fmt::color::red)   | fmt::emphasis::bold, "serial");
 
 static unsigned char const crc8x_table[] = {
   0x00, 0x31, 0x62, 0x53, 0xc4, 0xf5, 0xa6, 0x97, 0xb9, 0x88, 0xdb, 0xea, 0x7d,
@@ -28,16 +29,7 @@ static unsigned char const crc8x_table[] = {
   0x1a, 0x2b, 0xbc, 0x8d, 0xde, 0xef, 0x82, 0xb3, 0xe0, 0xd1, 0x46, 0x77, 0x24,
   0x15, 0x3b, 0x0a, 0x59, 0x68, 0xff, 0xce, 0x9d, 0xac};
 
-uint8_t crc8x_cal(const uint8_t *mem, size_t len) {
-  uint8_t crc = 0x00;
-  const uint8_t *data = mem;
-  if (data == NULL)
-      return 0xff;
-  crc &= 0xff;
-  while (len--)
-      crc = crc8x_table[crc ^ *data++];
-  return crc;
-}
+uint8_t crc8x_cal(const uint8_t *mem, size_t len);
 }
 
 class RoboSerial : public serial::Serial {

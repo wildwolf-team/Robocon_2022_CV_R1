@@ -7,8 +7,8 @@
 
 namespace solvepnp
 {
-    auto idntifier_green = fmt::format(fg(fmt::color::green), "solvePnP");
-    auto idntifier_red = fmt::format(fg(fmt::color::red), "solvePnP");
+    const auto idntifier_green = fmt::format(fg(fmt::color::green), "solvePnP");
+    const auto idntifier_red = fmt::format(fg(fmt::color::red), "solvePnP");
 
     class PnP
     {

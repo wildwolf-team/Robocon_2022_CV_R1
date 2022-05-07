@@ -10,6 +10,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g -Wfatal-errors -D_MWAITXINT
 # add_definitions(-DRELEASE)
 set(SRCS
     main.cpp
+    robo.cpp
     devices/camera/mv_video_capture.cpp
     devices/serial/uart_serial.cpp)
 add_executable(${PROJECT_NAME} ${SRCS})
@@ -42,12 +43,14 @@ set(serial_SRCS
     devices/new_serial/src/impl/list_ports/list_ports_linux.cc
     devices/new_serial/serial/serial.h
     devices/new_serial/serial/v8stdint.h
+    devices/new_serial/serial.cpp
 )
 include_directories(devices/new_serial)
 add_library(new_serial ${serial_SRCS})
 target_link_libraries(${PROJECT_NAME} new_serial)
 
 #TensorRTx
+add_library(tensorrt TensorRTx/common.cpp)
 find_package(CUDA REQUIRED)
 # cuda
 include_directories(/usr/local/cuda11.6/include)
@@ -59,7 +62,7 @@ cuda_add_library(myplugins SHARED TensorRTx/yololayer.cu)
 target_link_libraries(myplugins nvinfer cudart)
 cuda_add_library(TensorRTx SHARED TensorRTx/calibrator.cpp TensorRTx/yolov5.hpp TensorRTx/preprocess.cu)
 target_link_libraries(TensorRTx nvinfer cudart myplugins ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME} TensorRTx)
+target_link_libraries(${PROJECT_NAME} TensorRTx tensorrt)
 
 set(CONFIG_FILE_PATH ${PROJECT_SOURCE_DIR}/configs)
 set(SOURCE_PATH ${PROJECT_SOURCE_DIR})

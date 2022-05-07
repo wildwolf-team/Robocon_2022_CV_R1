@@ -1,15 +1,5 @@
-#ifndef YOLOV5_COMMON_H_
-#define YOLOV5_COMMON_H_
-
-#include <fstream>
-#include <map>
-#include <sstream>
-#include <vector>
-#include <opencv2/opencv.hpp>
-#include "NvInfer.h"
-#include "yololayer.h"
-
-using namespace nvinfer1;
+#include "common.h"
+#include "yolov5.hpp"
 
 cv::Rect get_rect(cv::Mat& img, float bbox[4]) {
     float l, r, t, b;
@@ -56,7 +46,7 @@ bool cmp(const Yolo::Detection& a, const Yolo::Detection& b) {
     return a.conf > b.conf;
 }
 
-void nms(std::vector<Yolo::Detection>& res, float *output, float conf_thresh, float nms_thresh = 0.5) {
+void nms(std::vector<Yolo::Detection>& res, float *output, float conf_thresh, float nms_thresh) {
     int det_size = sizeof(Yolo::Detection) / sizeof(float);
     std::map<float, std::vector<Yolo::Detection>> m;
     for (int i = 0; i < output[0] && i < Yolo::MAX_OUTPUT_BBOX_COUNT; i++) {
@@ -83,8 +73,6 @@ void nms(std::vector<Yolo::Detection>& res, float *output, float conf_thresh, fl
     }
 }
 
-// TensorRT weight files have a simple space delimited format:
-// [type] [size] <data x size in hex>
 std::map<std::string, Weights> loadWeights(const std::string file) {
     std::cout << "Loading weights: " << file << std::endl;
     std::map<std::string, Weights> weightMap;
@@ -155,8 +143,6 @@ IScaleLayer* addBatchNorm2d(INetworkDefinition *network, std::map<std::string, W
     assert(scale_1);
     return scale_1;
 }
-
-
 
 ILayer* convBlock(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, int outch, int ksize, int s, int g, std::string lname) {
     Weights emptywts{ DataType::kFLOAT, nullptr, 0 };
@@ -323,5 +309,13 @@ IPluginV2Layer* addYoLoLayer(INetworkDefinition *network, std::map<std::string, 
     auto yolo = network->addPluginV2(&input_tensors[0], input_tensors.size(), *plugin_obj);
     return yolo;
 }
-#endif
 
+void doInference(IExecutionContext& context, cudaStream_t& stream,
+                 void** buffers, float* output, int batchSize) {
+  // infer on the batch asynchronously, and DMA output back to host
+  context.enqueue(batchSize, buffers, stream, nullptr);
+  CUDA_CHECK(cudaMemcpyAsync(output, buffers[1],
+                             batchSize * OUTPUT_SIZE * sizeof(float),
+                             cudaMemcpyDeviceToHost, stream));
+  cudaStreamSynchronize(stream);
+}

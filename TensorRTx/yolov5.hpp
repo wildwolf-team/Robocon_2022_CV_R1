@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "calibrator.h"
-#include "common.hpp"
+#include "common.h"
 #include "cuda_utils.h"
 #include "logging.h"
 #include "preprocess.h"
@@ -27,37 +27,14 @@ static const int OUTPUT_SIZE =
     Yolo::MAX_OUTPUT_BBOX_COUNT * sizeof(Yolo::Detection) / sizeof(float) +
     1;  // we assume the yololayer outputs no more than MAX_OUTPUT_BBOX_COUNT
         // boxes that conf >= 0.1
-const char* INPUT_BLOB_NAME = "data";
-const char* OUTPUT_BLOB_NAME = "prob";
-
-std::vector<Yolo::Detection> error(1);
-Yolo::Detection error_info;
-// error_info.bbox[0]  = -1.0;
-// error_info.bbox[1]  = -1.0;
-// error_info.bbox[2]  = -1.0;
-// error_info.bbox[3]  = -1.0;
-// error_info.conf     = -1.0;
-// error_info.class_id = -1.0;
-// error.push_back(error_info);
-
-void doInference(IExecutionContext& context, cudaStream_t& stream,
-                 void** buffers, float* output, int batchSize) {
-  // infer on the batch asynchronously, and DMA output back to host
-  context.enqueue(batchSize, buffers, stream, nullptr);
-  CUDA_CHECK(cudaMemcpyAsync(output, buffers[1],
-                             batchSize * OUTPUT_SIZE * sizeof(float),
-                             cudaMemcpyDeviceToHost, stream));
-  cudaStreamSynchronize(stream);
-}
 
 class YOLOv5TRT {
  public:
   YOLOv5TRT(std::string engine_name) {
     cudaSetDevice(DEVICE);
     std::ifstream file(engine_name, std::ios::binary);
-    if (!file.good()) {
-      fmt::print("read ", engine_name, " error!\n");
-    }
+    if (!file.good())
+      std::cout << "yolov5 read engine file error" << std::endl;\
     // trtModelStream, size
     char* trtModelStream = nullptr;
     size = 0;
@@ -76,8 +53,8 @@ class YOLOv5TRT {
     // In order to bind the buffers, we need to know the names of the input and
     // output tensors. Note that indices are guaranteed to be less than
     // IEngine::getNbBindings()
-    inputIndex = engine->getBindingIndex(INPUT_BLOB_NAME);
-    outputIndex = engine->getBindingIndex(OUTPUT_BLOB_NAME);
+    inputIndex = engine->getBindingIndex("data");
+    outputIndex = engine->getBindingIndex("prob");
     // Create GPU buffers on device
     CUDA_CHECK(cudaMalloc((void**)&buffers[inputIndex],
                           BATCH_SIZE * 3 * INPUT_H * INPUT_W * sizeof(float)));
@@ -97,7 +74,8 @@ class YOLOv5TRT {
   }
 
   std::vector<Yolo::Detection> Detect(const cv::Mat &img) {
-    if (img.empty()) fmt::print("fail to read img.");
+    if (img.empty())
+      std::cout << "yolov5 read img error" << std::endl;
     float* buffer_idx = (float*)buffers[inputIndex];  // new<----
     imgs_buffer[0] = img;                             // new<----
     size_t size_image = img.cols * img.rows * 3;
