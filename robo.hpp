@@ -19,13 +19,23 @@
 #include "streamer/mjpeg_streamer.hpp"
 #include "TensorRTx/yolov5.hpp"
 
+namespace myrobo {
+  struct ROSInfoPub;
+  struct detection;
+}
+
+// void streamer_callback(RoboR1 r1, nadjieb::net::HTTPRequest &req);
+
 class RoboR1 {
  private:
   bool end_node_{false};
   bool is_kalman_open_{true};
+  bool debug_mode{true};
 
   RoboCmd robo_cmd;
   RoboInf robo_inf;
+
+  myrobo::ROSInfoPub ros_pub_;
 
   rclcpp::Node::SharedPtr n_;
   std::unique_ptr<RoboSerial> serial_;
@@ -39,9 +49,20 @@ class RoboR1 {
   RoboR1();
   void Init();
   void Spin();
+
   void uartWrite();
   void uartRead();
-  void detection();
+
+  void streamerCallback(const nadjieb::net::HTTPRequest &req);
+
+  void detectionTask();
+  void yoloDetectionCovert(std::vector<Yolo::Detection> &_res,
+    cv::Mat &_img, std::vector<myrobo::detection> &_pred);
+  void targetFilter(const std::vector<myrobo::detection> &_pred,
+    const cv::Rect &_region, cv::Rect &_target, bool &_is_lose);
+  void storeRoboInfo(const cv::Point2f &_pnp_angle, const float &_depth,
+    const bool &_detect_object);
+
   void stop();
   ~RoboR1();
 };

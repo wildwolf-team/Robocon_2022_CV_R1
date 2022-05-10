@@ -6,27 +6,11 @@
 class RoboStreamer : public nadjieb::MJPEGStreamer {
  public:
   void callOutFunc(nadjieb::net::HTTPRequest &req) {
-    if (req.getTarget() == "/stop") {
-      stop_node_func_();
-    }
-    if ((req.getTarget() == "/setCameraExposure") && (req.getMethod() == "POST")){
-      camera_set_exposure_func_(stoi(req.getBody()));
-    }
-    if ((req.getTarget() == "/setCameraOnceWB")){
-      camera_set_once_wb_func_();
-    }
+    func_callback_(req);
   }
 
-  void setCameraSetExposureFuncPtr(std::function<void(int)> func_ptr) {
-    camera_set_exposure_func_ = func_ptr;
-  }
-
-  void setCameraOnceWBFuncPtr(std::function<void(void)> func_ptr) {
-    camera_set_once_wb_func_ = func_ptr;
-  }
-
-  void setStopNodeFuncPtr(std::function<void(void)> func_ptr) {
-    stop_node_func_ = func_ptr;
+  void setCallbackFuncPtr(std::function<void(nadjieb::net::HTTPRequest &req)> func_ptr) {
+    func_callback_ = func_ptr;
   }
 
   template <typename T>
@@ -82,4 +66,5 @@ template <typename... Args>
   std::function<void(int)> camera_set_exposure_func_;
   std::function<void(void)> camera_set_once_wb_func_;
   std::function<void(void)> stop_node_func_;
+  std::function<void(nadjieb::net::HTTPRequest &req)> func_callback_;
 };
