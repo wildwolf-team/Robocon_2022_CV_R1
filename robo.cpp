@@ -71,7 +71,7 @@ void RoboR1::Spin() {
   std::thread uartReadThread(std::bind(&RoboR1::uartRead,this));
   std::thread detectionThread(std::bind(&RoboR1::detectionTask,this));
 
-  while (!end_node_) {
+  while (!end_node_ && rclcpp::ok()) {
     if (uartWriteThread.joinable())
       uartWriteThread.detach();
     if (uartReadThread.joinable())
@@ -81,11 +81,17 @@ void RoboR1::Spin() {
     std::this_thread::sleep_for(1000ms);
   }
 
+  if(!end_node_){
+    end_node_ = true;
+    sleep(1);
+  }
+
   try {
     if(serial_->isOpen())
       serial_->close();
     if(streamer_->isRunning())
       streamer_->stop();
+    rclcpp::shutdown();
   } catch (const std::exception& e) {
     fmt::print("{}\n", e.what());
   }
