@@ -13,6 +13,13 @@
     <label id="ready_to_shoot" class="eva-heading__title">shoot</label>
     <label id="camera_state" class="eva-heading__title">camera offline</label>
     <label id="serial_state" class="eva-heading__title">serial offline</label>
+    <button id="ball_first">BALL_1</button>
+    <button id="ball_second">BALL_2</button>
+    <button id="ball_third">BALL_3</button>
+    <button id="ball_fourth">BALL_4</button>
+    <button id="ball_fifth">BALL_5</button>
+    <button id="ball_sixth">BALL_6</button>
+    <button id="ball_stop">BALL_STOP</button>
   </aside>
   <body>
     <!-- mjpeg streamer -->
@@ -38,13 +45,32 @@ HardwareState("ready_to_shoot", true);
 HardwareState("camera_state", false);
 HardwareState("serial_state", false);
 
-$(document).ready(function(){
-  $("#setCameraExposure").click(function(){
-    $.post("setCameraExposure", $("#camera_exposure").val());
-  });
-  $("#setCameraOnceWB").click(function(){
-    $.get("setCameraOnceWB");
-  });
+$("#setCameraExposure").click(function(){
+  $.post("setCameraExposure", $("#camera_exposure").val());
+});
+$("#setCameraOnceWB").click(function(){
+  $.get("setCameraOnceWB");
+});
+$("#ball_first").click(function(){
+  $.post("catchBall", "1");
+});
+$("#ball_second").click(function(){
+  $.post("catchBall", "2");
+});
+$("#ball_third").click(function(){
+  $.post("catchBall", "3");
+});
+$("#ball_fourth").click(function(){
+  $.post("catchBall", "4");
+});
+$("#ball_fifth").click(function(){
+  $.post("catchBall", "5");
+});
+$("#ball_six").click(function(){
+  $.post("catchBall", "6");
+});
+$("#ball_stop").click(function(){
+  $.post("catchBall", "0");
 });
 
 var gamepad = new Gamepad();

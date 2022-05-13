@@ -29,3 +29,10 @@ struct RoboInfUartBuff {
   uint8_t crc8x{0x00};
   uint8_t end{0x00};
 } __attribute__((packed));
+
+struct RoboCatchBallUartBuff {
+  uint8_t start = (unsigned)'S';
+  int code {0};
+  uint8_t crc8x{0x00};
+  uint8_t end = (unsigned)'E';
+} __attribute__((packed));

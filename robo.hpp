@@ -34,6 +34,8 @@ class RoboR1 {
   RoboCmd robo_cmd;
   RoboInf robo_inf;
 
+  std::mutex mtx;
+
   rclcpp::Node::SharedPtr n_;
   std::unique_ptr<RoboSerial> serial_;
   std::shared_ptr<mindvision::VideoCapture> camera_;

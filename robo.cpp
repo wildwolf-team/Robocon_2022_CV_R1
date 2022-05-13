@@ -89,6 +89,7 @@ void RoboR1::uartRead() {
 void RoboR1::uartWrite() {
   while (!end_node_) try {
       if(serial_->isOpen()) {
+        std::lock_guard<std::mutex> lck(mtx);
         serial_->WriteInfo(robo_cmd);
       } else {
         serial_->open();
@@ -132,6 +133,15 @@ void RoboR1::streamerCallback(const nadjieb::net::HTTPRequest &req) {
       std::getline(iss, val, '&');
       gamepad_state_key_val[key] = std::stof(val);
     }
+  }
+  if(req.getTarget() == "/catchBall" && req.getMethod() == "POST") {
+    RoboCatchBallUartBuff ub;
+    ub.code = std::stoi(req.getBody());
+    std::lock_guard<std::mutex> lck(mtx);
+    usleep(2);
+    if(serial_->isOpen())
+      serial_->write((uint8_t *)&ub, sizeof(ub));
+    usleep(2);
   }
 }
 
