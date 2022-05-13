@@ -3,28 +3,6 @@
 using namespace std::chrono_literals;
 
 namespace myrobo {
-  struct ROSInfoPub{
-    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> yaw_detect_publisher;
-    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> pitch_detect_publisher;
-    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> kalman_in_publisher;
-    std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> imu_yaw_publisher;
-
-    void nh_init(rclcpp::Node::SharedPtr n_){
-      yaw_detect_publisher =
-        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/yaw",
-          rclcpp::QoS(rclcpp::KeepAll()));
-      pitch_detect_publisher =
-        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/pitch",
-          rclcpp::QoS(rclcpp::KeepAll()));
-      kalman_in_publisher =
-        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/kalman_in",
-          rclcpp::QoS(rclcpp::KeepAll()));
-      imu_yaw_publisher =
-        n_->create_publisher<std_msgs::msg::Float32>("ptz/detect/imu_yaw",
-          rclcpp::QoS(rclcpp::KeepAll()));
-    }
-  };
-
   struct detection {
     cv::Rect rect;
     float class_id;
@@ -47,7 +25,6 @@ RoboR1::RoboR1() try {
   camera_ = std::make_shared<mindvision::VideoCapture>(camera_params);
   serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
   streamer_ = std::make_unique<RoboStreamer>();
-  ros_pub_.nh_init(n_);
 } catch (const std::exception &e) {
   fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
               fmt::emphasis::bold, "construct"), e.what());
@@ -177,6 +154,13 @@ void RoboR1::detectionTask() {
   cv::Point3f target_pnp_coordinate_mm;
   std::vector<myrobo::detection> pred;
 
+  auto detection_info_pub = n_->create_publisher
+    <std_msgs::msg::Float32MultiArray>(
+      "ptz/detection", rclcpp::QoS(rclcpp::KeepAll()));
+  std_msgs::msg::Float32MultiArray detection_msg;
+  std::vector<float> vec;
+  detection_msg.data = vec;
+
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
@@ -251,6 +235,16 @@ void RoboR1::detectionTask() {
     } else {
       cv::Point2f empty;
       storeRoboInfo(empty, 0.f, false);
+    }
+
+    if (debug_mode) {
+      vec.clear();
+      vec.emplace_back(target_pnp_angle.x);
+      vec.emplace_back(target_pnp_angle.y);
+      vec.emplace_back(robo_inf.yaw_angle.load());
+      vec.emplace_back(target_pnp_angle.y -
+                       robo_inf.yaw_angle.load());
+      detection_info_pub->publish(detection_msg);
     }
 
     if (!src_img.empty()) {

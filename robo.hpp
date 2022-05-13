@@ -6,6 +6,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include <opencv2/opencv.hpp>
 #define FMT_HEADER_ONLY
 #include <fmt/color.h>
@@ -32,8 +33,6 @@ class RoboR1 {
 
   RoboCmd robo_cmd;
   RoboInf robo_inf;
-
-  myrobo::ROSInfoPub ros_pub_;
 
   rclcpp::Node::SharedPtr n_;
   std::unique_ptr<RoboSerial> serial_;
