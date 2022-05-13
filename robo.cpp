@@ -142,6 +142,19 @@ void RoboR1::streamerCallback(const nadjieb::net::HTTPRequest &req) {
   if ((req.getTarget() == "/setCameraOnceWB")){
     camera_->setCameraOnceWB();
   }
+  if (req.getTarget() == "/gamepadInput" && req.getMethod() == "POST") {
+    std::map<std::string, float> gamepad_state_key_val;
+    std::string gamepad_input_str = req.getBody();
+    std::istringstream iss(gamepad_input_str);
+    std::string key, val;
+    while (true) {
+      key="";
+      std::getline(iss, key, '=');
+      if(key == "") break;
+      std::getline(iss, val, '&');
+      gamepad_state_key_val[key] = std::stof(val);
+    }
+  }
 }
 
 void RoboR1::detectionTask() {

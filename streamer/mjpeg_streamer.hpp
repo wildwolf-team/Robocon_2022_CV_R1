@@ -63,8 +63,5 @@ template <typename... Args>
   }
 
  private:
-  std::function<void(int)> camera_set_exposure_func_;
-  std::function<void(void)> camera_set_once_wb_func_;
-  std::function<void(void)> stop_node_func_;
   std::function<void(nadjieb::net::HTTPRequest &req)> func_callback_;
 };

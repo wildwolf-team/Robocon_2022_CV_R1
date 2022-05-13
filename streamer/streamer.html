@@ -1,4 +1,8 @@
 <html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/kallaspriit/HTML5-JavaScript-Gamepad-Controller-Library@master/gamepad.min.js"></script>
+  </head>
   <aside class="eva-heading" style="position:absolute;left:1160px;">
     <h1 class="eva-heading__title" >yaw angle</h2>
     <h2 class="eva-heading__episode-number" id="yaw_angle"></h3>
@@ -13,8 +17,8 @@
     <img src="/pc" style="width:1152px;height:921.6px;">
     <br>
     <input type="text" id="camera_exposure">
-    <button onclick="setCameraExposure()">setCameraExposure</button>
-    <button onclick="setCameraOnceWB()">setCameraOnceWB</button>
+    <button id="setCameraExposure">setCameraExposure</button>
+    <button id="setCameraOnceWB">setCameraOnceWB</button>
     <!-- iframe streamer -->
     <iframe src="/iframe" style="display:none"></iframe>
   </body>
@@ -28,20 +32,26 @@ function ReadytoShoot(flag) {
     document.getElementById('ready_to_shoot').style.color = 'red';
 }
 
-function setCameraExposure() {
-  var dom = document.getElementById('camera_exposure');
-  var httpRequest = new XMLHttpRequest();
-  httpRequest.open('POST', 'setCameraExposure', true);
-  httpRequest.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-  httpRequest.send(dom.value);
-}
+$(document).ready(function(){
+  $("#setCameraExposure").click(function(){
+    $.post("setCameraExposure", $("#camera_exposure").val());
+  });
+  $("#setCameraOnceWB").click(function(){
+    $.get("setCameraOnceWB");
+  });
+});
 
-function setCameraOnceWB() {
-  var httpRequest = new XMLHttpRequest();
-  httpRequest.open('GET', 'setCameraOnceWB', true);
-  httpRequest.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-  httpRequest.send();
-}
+var gamepad = new Gamepad();
+gamepad.bind(Gamepad.Event.BUTTON_DOWN, function(e) {
+});
+gamepad.bind(Gamepad.Event.BUTTON_UP, function(e) {
+});
+gamepad.bind(Gamepad.Event.AXIS_CHANGED, function(e) {
+});
+gamepad.bind(Gamepad.Event.TICK, function(gamepads) {
+  $.post("gamepadInput", gamepads[0].state);
+});
+gamepad.init();
 
   </script>
   <style>

@@ -24,8 +24,6 @@ namespace myrobo {
   struct detection;
 }
 
-// void streamer_callback(RoboR1 r1, nadjieb::net::HTTPRequest &req);
-
 class RoboR1 {
  private:
   bool end_node_{false};

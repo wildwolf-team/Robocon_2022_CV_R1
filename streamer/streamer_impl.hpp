@@ -810,8 +810,11 @@ class MJPEGStreamer : public nadjieb::utils::NonCopyable {
         if (req.getMethod() != "GET") {
             nadjieb::net::HTTPResponse method_not_allowed_res;
             method_not_allowed_res.setVersion(req.getVersion());
-            method_not_allowed_res.setStatusCode(405);
-            method_not_allowed_res.setStatusText("Method Not Allowed");
+            // method_not_allowed_res.setStatusCode(405);
+            // method_not_allowed_res.setStatusText("Method Not Allowed");
+            method_not_allowed_res.setStatusCode(200);
+            method_not_allowed_res.setStatusText("OK");
+            method_not_allowed_res.setValue("Connection", "close");
             auto method_not_allowed_res_str = method_not_allowed_res.serialize();
 
             nadjieb::net::sendViaSocket(
