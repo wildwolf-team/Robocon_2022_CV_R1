@@ -11,6 +11,8 @@
     <h1 class="eva-heading__title">imu yaw angle</h2>
     <h2 class="eva-heading__episode-number" id="imu_angle"></h3>
     <label id="ready_to_shoot" class="eva-heading__title">shoot</label>
+    <label id="camera_state" class="eva-heading__title">camera offline</label>
+    <label id="serial_state" class="eva-heading__title">serial offline</label>
   </aside>
   <body>
     <!-- mjpeg streamer -->
@@ -24,13 +26,17 @@
   </body>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
   <script>
-// js function
-function ReadytoShoot(flag) {
-  if(flag)
-    document.getElementById('ready_to_shoot').style.color = 'yellow';
+
+function HardwareState(hw, flag) {
+  if(!flag)
+    $("#"+hw).show();
   else
-    document.getElementById('ready_to_shoot').style.color = 'red';
+    $("#"+hw).hide();
 }
+
+HardwareState("ready_to_shoot", true);
+HardwareState("camera_state", false);
+HardwareState("serial_state", false);
 
 $(document).ready(function(){
   $("#setCameraExposure").click(function(){

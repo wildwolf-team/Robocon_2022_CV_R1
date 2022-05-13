@@ -118,6 +118,7 @@ void RoboR1::uartWrite() {
       }
       std::this_thread::sleep_for(10ms);
     } catch (const std::exception &e) {
+      streamer_->call_html_js_function("HardwareState(\"serial_state\", false);");
       serial_->close();
       static int serial_read_excepted_times{0};
       if (serial_read_excepted_times++ > 3) {
@@ -189,9 +190,10 @@ void RoboR1::detectionTask() {
       }
       targetFilter(pred, follow_detect_region, target_rect, is_lose);
     } else {
+      streamer_->call_html_js_function("HardwareState(\"camera_state\", false);");
       is_lose = true;
       camera_->open();
-      std::this_thread::sleep_for(3000ms);
+      std::this_thread::sleep_for(1000ms);
     }
 
     if(robo_inf.following.load() && is_lose == false) {
@@ -293,9 +295,9 @@ void RoboR1::detectionTask() {
          target_pnp_angle.y > 0.5f) ||
          (detection_pnp_angle.y > 0.5f &&
          target_pnp_angle.y < -0.5f)))
-        streamer_->call_html_js_function("ReadytoShoot(true)");
+        streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", false);");
       else
-        streamer_->call_html_js_function("ReadytoShoot(false)");
+        streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", true);");
     }
     usleep(1);
   } catch (const std::exception &e) {
