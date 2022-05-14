@@ -171,6 +171,11 @@ void RoboR1::detectionTask() {
   std::vector<float> vec;
   detection_msg.data = vec;
 
+  auto detection_img_pub = n_->create_publisher
+    <sensor_msgs::msg::CompressedImage>("ptz/img",
+      rclcpp::QoS(rclcpp::KeepAll()));
+  std_msgs::msg::Header header;
+
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
@@ -290,6 +295,13 @@ void RoboR1::detectionTask() {
                         buff_bgr.end()));
       streamer_->publish_text_value("yaw_angle", target_pnp_angle.y);
       streamer_->publish_text_value("pitch_angle", target_pnp_angle.x);
+
+      if(debug_mode) {
+        cv_bridge::CvImage cv_image(header, "bgr8", src_img);
+        auto cv_image_ptr = cv_image.toCompressedImageMsg();
+        cv_image_ptr->header.stamp = n_->get_clock()->now();
+        detection_img_pub->publish(*cv_image_ptr);
+      }
 
       // 击打指示
       if(is_lose == false &&

@@ -7,6 +7,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
+#include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #define FMT_HEADER_ONLY
 #include <fmt/color.h>
