@@ -166,14 +166,14 @@ void RoboR1::detectionTask() {
 
   auto detection_info_pub = n_->create_publisher
     <std_msgs::msg::Float32MultiArray>(
-      "ptz/detection", rclcpp::QoS(rclcpp::KeepAll()));
+      "ptz/detection", rclcpp::QoS(rclcpp::KeepLast(50)));
   std_msgs::msg::Float32MultiArray detection_msg;
   std::vector<float> vec;
   detection_msg.data = vec;
 
   auto detection_img_pub = n_->create_publisher
     <sensor_msgs::msg::CompressedImage>("ptz/img",
-      rclcpp::QoS(rclcpp::KeepAll()));
+      rclcpp::QoS(rclcpp::KeepLast(50)));
   std_msgs::msg::Header header;
 
   while (!end_node_) try {
