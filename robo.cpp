@@ -138,10 +138,15 @@ void RoboR1::streamerCallback(const nadjieb::net::HTTPRequest &req) {
     RoboCatchBallUartBuff ub;
     ub.code = std::stoi(req.getBody());
     std::lock_guard<std::mutex> lck(mtx);
-    usleep(2);
-    if(serial_->isOpen())
-      serial_->write((uint8_t *)&ub, sizeof(ub));
-    usleep(2);
+    usleep(2000);
+    if(serial_->isOpen()) {
+      ub.crc8x = serial::crc8x_cal((uint8_t *)&ub + 1,
+                                   sizeof(ub) - 3);
+      for(int i = 0; i < 3; i++) {
+        serial_->write((uint8_t *)&ub, sizeof(ub));
+        usleep(3000);
+      }
+    }
   }
 }
 

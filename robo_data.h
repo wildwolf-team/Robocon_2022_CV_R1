@@ -32,6 +32,7 @@ struct RoboInfUartBuff {
 
 struct RoboCatchBallUartBuff {
   uint8_t start = (unsigned)'S';
+  uint8_t command = 0x01;
   int code {0};
   uint8_t crc8x{0x00};
   uint8_t end = (unsigned)'E';
