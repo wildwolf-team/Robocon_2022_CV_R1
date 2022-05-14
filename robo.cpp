@@ -100,9 +100,9 @@ void RoboR1::uartWrite() {
       serial_->close();
       static int serial_read_excepted_times{0};
       if (serial_read_excepted_times++ > 3) {
-        fmt::print("[{}] serial excepted to many times, sleep 10s.\n",
+        fmt::print("[{}] serial excepted to many times, sleep 3s.\n",
                    serial::idntifier_red);
-        std::this_thread::sleep_for(10000ms);
+        std::this_thread::sleep_for(3000ms);
         serial_read_excepted_times = 0;
       }
       fmt::print("[{}] {}\n",
@@ -286,6 +286,8 @@ void RoboR1::detectionTask() {
       cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 5);
       cv::rectangle(src_img, target_rect_predicted,
                     cv::Scalar(255, 0, 150), 5);
+
+      cv::resize(src_img, src_img, cv::Size(320, 240));
 
       // 网页图传
       std::vector<uchar> buff_bgr;
