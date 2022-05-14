@@ -146,7 +146,8 @@ void RoboR1::streamerCallback(const nadjieb::net::HTTPRequest &req) {
 }
 
 void RoboR1::detectionTask() {
-  float pnp_yaw_factor{1.05f}; // pnp 修正倍率
+  float pnp_yaw_factor{1.f}; // pnp 修正倍率
+  float imu_yaw{0.f};
   bool is_lose{true};
   int lose_target_times{0};
   float depth{0};
@@ -179,6 +180,7 @@ void RoboR1::detectionTask() {
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
+      imu_yaw = robo_inf.yaw_angle.load();
       cv::Mat detect_roi_region = src_img(follow_detect_region);
       cv::Mat detect_roi_region_clone = detect_roi_region.clone();
       auto res = yolo_detection_->Detect(detect_roi_region_clone);
@@ -216,8 +218,8 @@ void RoboR1::detectionTask() {
 
       // kalman 预测
       float kalman_yaw_compensate =
-        kalman_prediction_->Prediction(robo_inf.yaw_angle.load() -
-                                       detection_pnp_angle.y, depth, 15.f);
+        kalman_prediction_->Prediction(imu_yaw - detection_pnp_angle.y,
+                                       depth, 15.f);
       target_rect_predicted = target_rect;
       target_rect_predicted.x = target_rect.x - kalman_yaw_compensate;
       pnp_->solvePnP(target_rect_3d, target_rect_predicted,
@@ -256,9 +258,10 @@ void RoboR1::detectionTask() {
       vec.clear();
       vec.emplace_back(target_pnp_angle.x);
       vec.emplace_back(target_pnp_angle.y);
-      vec.emplace_back(robo_inf.yaw_angle.load());
-      vec.emplace_back(target_pnp_angle.y -
-                       robo_inf.yaw_angle.load());
+      vec.emplace_back(imu_yaw);
+      vec.emplace_back(imu_yaw - detection_pnp_angle.y);
+      vec.emplace_back(detection_pnp_angle.y);
+      detection_msg.data = vec;
       detection_info_pub->publish(detection_msg);
     }
 
