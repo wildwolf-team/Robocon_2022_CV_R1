@@ -3,7 +3,17 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/kallaspriit/HTML5-JavaScript-Gamepad-Controller-Library@master/gamepad.min.js"></script>
   </head>
-  <aside class="eva-heading" style="position:absolute;left:1160px;">
+  <aside class="eva-heading" style="position:absolute;left:800px;">
+    <button id="ball_first">BALL_1</button>
+    <button id="ball_second">BALL_2</button>
+    <button id="ball_third">BALL_3</button>
+    <button id="ball_fourth">BALL_4</button>
+    <button id="ball_fifth">BALL_5</button>
+    <button id="ball_sixth">BALL_6</button>
+    <button id="ball_stop">BALL_STOP</button>
+    <button id="predict_close">PREDICT_CLOSE</button>
+    <button id="predict_open">PREDICT_OPEN</button>
+    <br><br><br><br>
     <h1 class="eva-heading__title" >yaw angle</h2>
     <h2 class="eva-heading__episode-number" id="yaw_angle"></h3>
     <h1 class="eva-heading__title">pitch angle</h2>
@@ -13,17 +23,10 @@
     <label id="ready_to_shoot" class="eva-heading__title">shoot</label>
     <label id="camera_state" class="eva-heading__title">camera offline</label>
     <label id="serial_state" class="eva-heading__title">serial offline</label>
-    <button id="ball_first">BALL_1</button>
-    <button id="ball_second">BALL_2</button>
-    <button id="ball_third">BALL_3</button>
-    <button id="ball_fourth">BALL_4</button>
-    <button id="ball_fifth">BALL_5</button>
-    <button id="ball_sixth">BALL_6</button>
-    <button id="ball_stop">BALL_STOP</button>
   </aside>
   <body>
     <!-- mjpeg streamer -->
-    <img src="/pc" style="width:1152px;height:921.6px;">
+    <img src="/pc" style="width:768px;height:614.4px;">
     <br>
     <input type="text" id="camera_exposure">
     <button id="setCameraExposure">setCameraExposure</button>
@@ -42,8 +45,8 @@ function HardwareState(hw, flag) {
 }
 
 HardwareState("ready_to_shoot", true);
-HardwareState("camera_state", false);
-HardwareState("serial_state", false);
+HardwareState("camera_state", true);
+HardwareState("serial_state", true);
 
 $("#setCameraExposure").click(function(){
   $.post("setCameraExposure", $("#camera_exposure").val());
@@ -66,11 +69,17 @@ $("#ball_fourth").click(function(){
 $("#ball_fifth").click(function(){
   $.post("catchBall", "5");
 });
-$("#ball_six").click(function(){
+$("#ball_sixth").click(function(){
   $.post("catchBall", "6");
 });
 $("#ball_stop").click(function(){
   $.post("catchBall", "0");
+});
+$("#predict_close").click(function(){
+  $.post("kalmanPrediction", "close");
+});
+$("#predict_open").click(function(){
+  $.post("kalmanPrediction", "open");
 });
 
 var gamepad = new Gamepad();

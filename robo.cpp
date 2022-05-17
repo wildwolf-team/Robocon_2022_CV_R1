@@ -148,6 +148,12 @@ void RoboR1::streamerCallback(const nadjieb::net::HTTPRequest &req) {
       }
     }
   }
+  if(req.getTarget() == "/kalmanPrediction" && req.getMethod() == "POST") {
+    if(req.getBody() == "close")
+      is_kalman_open_ = false;
+    else if(req.getBody() == "open")
+      is_kalman_open_ = true;
+  }
 }
 
 void RoboR1::detectionTask() {
