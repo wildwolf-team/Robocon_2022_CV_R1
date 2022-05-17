@@ -185,7 +185,7 @@ void RoboR1::detectionTask() {
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
-      imu_yaw = robo_inf.yaw_angle.load();
+      imu_yaw = (robo_inf.yaw_angle.load() + imu_yaw) / 2;
       cv::Mat detect_roi_region = src_img(follow_detect_region);
       cv::Mat detect_roi_region_clone = detect_roi_region.clone();
       auto res = yolo_detection_->Detect(detect_roi_region_clone);
@@ -202,7 +202,7 @@ void RoboR1::detectionTask() {
       std::this_thread::sleep_for(1000ms);
     }
 
-    if(robo_inf.following.load() && is_lose == false) {
+    if(is_lose == false) {
       lose_target_times = 0;
       follow_detect_region.x = target_rect.x + target_rect.width / 2
                               - follow_detect_region.width / 2;
@@ -217,9 +217,11 @@ void RoboR1::detectionTask() {
       if(follow_detect_region.y + follow_detect_region.height > src_img.rows)
         follow_detect_region.y = src_img.rows - follow_detect_region.height;
 
+      float detection_pnp_yaw_previous = detection_pnp_angle.y;
       pnp_->solvePnP(target_rect_3d, target_rect, detection_pnp_angle,
                       target_pnp_coordinate_mm, depth);
       detection_pnp_angle.y *= pnp_yaw_factor;
+      detection_pnp_angle.y = (detection_pnp_yaw_previous + detection_pnp_angle.y) / 2;
 
       // kalman 预测
       float kalman_yaw_compensate =
@@ -248,7 +250,8 @@ void RoboR1::detectionTask() {
       is_lose = true;
     }
 
-    if(is_lose == false && lose_target_times++ < 5) {
+    if(is_lose == false || (is_lose == true &&
+       lose_target_times++ < 5)) {
       if(is_kalman_open_) {
         storeRoboInfo(target_pnp_angle, depth, true);
       } else {
@@ -256,6 +259,8 @@ void RoboR1::detectionTask() {
       }
     } else {
       cv::Point2f empty;
+      detection_pnp_angle = empty;
+      target_pnp_angle = empty;
       storeRoboInfo(empty, 0.f, false);
     }
 
