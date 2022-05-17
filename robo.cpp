@@ -194,6 +194,8 @@ void RoboR1::detectionTask() {
       rclcpp::QoS(rclcpp::KeepLast(50)));
   std_msgs::msg::Header header;
 
+  ThreadPool pool(4);
+
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
@@ -307,23 +309,27 @@ void RoboR1::detectionTask() {
         cv::Point(target_rect.x, target_rect.y - 1),
         cv::FONT_HERSHEY_DUPLEX, 1.5, cv::Scalar(255, 0, 150));
 
-      cv::resize(src_img, src_img, cv::Size(320, 240));
+      pool.enqueue([=]() { 
+        cv::Mat resize_src_img;
+        cv::resize(src_img, resize_src_img, cv::Size(320, 240));
 
-      // 网页图传
-      std::vector<uchar> buff_bgr;
-      cv::imencode(".jpg", src_img, buff_bgr);
-      streamer_->publish("/pc",
-                        std::string(buff_bgr.begin(),
-                        buff_bgr.end()));
-      streamer_->publish_text_value("yaw_angle", target_pnp_angle.y);
-      streamer_->publish_text_value("pitch_angle", target_pnp_angle.x);
+        // 网页图传
+        std::vector<uchar> buff_bgr;
+        cv::imencode(".jpg", resize_src_img, buff_bgr);
+        streamer_->publish("/pc",
+                          std::string(buff_bgr.begin(),
+                          buff_bgr.end()));
+        streamer_->publish_text_value("yaw_angle", target_pnp_angle.y);
+        streamer_->publish_text_value("pitch_angle", target_pnp_angle.x);
 
-      if(debug_mode) {
-        cv_bridge::CvImage cv_image(header, "bgr8", src_img);
-        auto cv_image_ptr = cv_image.toCompressedImageMsg();
-        cv_image_ptr->header.stamp = n_->get_clock()->now();
-        detection_img_pub->publish(*cv_image_ptr);
-      }
+        // ROS 图像显示
+        if(debug_mode) {
+          cv_bridge::CvImage cv_image(header, "bgr8", resize_src_img);
+          auto cv_image_ptr = cv_image.toCompressedImageMsg();
+          cv_image_ptr->header.stamp = n_->get_clock()->now();
+          detection_img_pub->publish(*cv_image_ptr);
+        }
+      });
 
       // 击打指示
       if(is_lose == false &&

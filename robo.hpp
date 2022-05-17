@@ -19,6 +19,7 @@
 #include "devices/new_serial/serial.hpp"
 #include "robo_data.h"
 #include "streamer/mjpeg_streamer.hpp"
+#include "ThreadPool.h"
 #include "TensorRTx/yolov5.hpp"
 
 namespace myrobo {
