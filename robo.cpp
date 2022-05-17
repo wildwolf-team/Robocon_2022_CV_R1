@@ -55,6 +55,14 @@ void RoboR1::Spin() {
       uartReadThread.detach();
     if (detectionThread.joinable())
       detectionThread.detach();
+    if (camera_->isOpen())
+      streamer_->call_html_js_function("HardwareState(\"camera_state\", true);");
+    else
+      streamer_->call_html_js_function("HardwareState(\"camera_state\", false);");
+    if(serial_->isOpen())
+      streamer_->call_html_js_function("HardwareState(\"serial_state\", true);");
+    else
+      streamer_->call_html_js_function("HardwareState(\"serial_state\", false);");
     std::this_thread::sleep_for(1000ms);
   }
 
@@ -96,7 +104,6 @@ void RoboR1::uartWrite() {
       }
       std::this_thread::sleep_for(10ms);
     } catch (const std::exception &e) {
-      streamer_->call_html_js_function("HardwareState(\"serial_state\", false);");
       serial_->close();
       static int serial_read_excepted_times{0};
       if (serial_read_excepted_times++ > 3) {
@@ -201,7 +208,6 @@ void RoboR1::detectionTask() {
       }
       targetFilter(pred, follow_detect_region, target_rect, is_lose);
     } else {
-      streamer_->call_html_js_function("HardwareState(\"camera_state\", false);");
       is_lose = true;
       camera_->open();
       std::this_thread::sleep_for(1000ms);
