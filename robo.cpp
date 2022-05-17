@@ -291,8 +291,9 @@ void RoboR1::detectionTask() {
         cv::rectangle(src_img, i.rect, cv::Scalar(0, 255, 0), 2);
       }
       cv::rectangle(src_img, target_rect, cv::Scalar(0, 150, 255), 5);
-      cv::rectangle(src_img, target_rect_predicted,
-                    cv::Scalar(255, 0, 150), 5);
+      cv::putText(src_img, std::to_string(depth),
+        cv::Point(target_rect.x, target_rect.y - 1),
+        cv::FONT_HERSHEY_DUPLEX, 1.5, cv::Scalar(255, 0, 150));
 
       cv::resize(src_img, src_img, cv::Size(320, 240));
 
