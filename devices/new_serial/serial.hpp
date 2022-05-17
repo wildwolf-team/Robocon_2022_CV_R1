@@ -53,8 +53,8 @@ class RoboSerial : public serial::Serial {
     robo_cmd_uart_temp.pitch_angle = robo_cmd.pitch_angle.load();
     robo_cmd_uart_temp.depth = robo_cmd.depth.load();
     robo_cmd_uart_temp.detect_object = robo_cmd.detect_object.load();
-    robo_cmd_uart_temp.crc8x = serial::crc8x_cal((uint8_t *)&robo_cmd_uart_temp,
-                                                 sizeof(robo_cmd_uart_temp) - 2);
+    robo_cmd_uart_temp.crc8x = serial::crc8x_cal((uint8_t *)&robo_cmd_uart_temp + 1,
+                                                 sizeof(robo_cmd_uart_temp) - 3);
 
     this->write((uint8_t *)&robo_cmd_uart_temp, sizeof(robo_cmd_uart_temp));
   }
