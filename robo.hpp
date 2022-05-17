@@ -21,6 +21,7 @@
 #include "streamer/mjpeg_streamer.hpp"
 #include "ThreadPool.h"
 #include "TensorRTx/yolov5.hpp"
+#include "utils/json.hpp"
 
 namespace myrobo {
   struct ROSInfoPub;

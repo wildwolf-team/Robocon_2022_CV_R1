@@ -11,6 +11,10 @@ namespace myrobo {
 }
 
 RoboR1::RoboR1() try {
+  nlohmann::json config_json;
+  std::ifstream config_is(fmt::format("{}{}", CONFIG_FILE_PATH,
+                  "/robo_config.json"));
+  config_is >> config_json;
   n_ = rclcpp::Node::make_shared("robo_r1_node");
   yolo_detection_ = std::make_unique<YOLOv5TRT>(
     fmt::format("{}{}", SOURCE_PATH, "/models/ball.engine"));
@@ -18,12 +22,14 @@ RoboR1::RoboR1() try {
     fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
     fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
   kalman_prediction_ = std::make_unique<KalmanPrediction>();
+  is_kalman_open_ = config_json["is_kalman_open"].get<bool>();
 
-  int camera_exposure = 5000;
+  int camera_exposure = config_json["camera_exposure_time"].get<int>();
   mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_1024,
                                           camera_exposure);
   camera_ = std::make_shared<mindvision::VideoCapture>(camera_params);
-  serial_ = std::make_unique<RoboSerial>("/dev/ttyACM0", 115200);
+  serial_ = std::make_unique<RoboSerial>(
+    config_json["serial_port"].get<std::string>(), 115200);
   streamer_ = std::make_unique<RoboStreamer>();
 } catch (const std::exception &e) {
   fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
