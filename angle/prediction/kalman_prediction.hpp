@@ -26,7 +26,7 @@ class KalmanPrediction : public Kalman<1, S> {
     start = std::chrono::system_clock::now();
   }
 
-  float Prediction(double ptz_yaw_angle, float depth, float shoot_speed) {
+  float Prediction(double ptz_yaw_angle, float depth) {
     auto end = std::chrono::system_clock::now();
     m_yaw = ptz_yaw_angle;
     if (std::fabs(last_yaw - m_yaw) > 5 ) {
@@ -44,17 +44,16 @@ class KalmanPrediction : public Kalman<1, S> {
               .count());
     }
 
-    double c_speed = state(1, 0);
+    double c_yaw = state(0, 0); // yaw 滤波数值，单位弧度
+    double c_speed = state(1, 0) * depth * 0.001; // 角速度 转 线速度 单位 m/s
     c_speed = (c_speed + last_speed) * 0.5;
     last_speed = c_speed;
-    double predict_time = depth * 0.001 / shoot_speed;
-    double s_yaw        = atan2(predict_time * c_speed * depth * 0.001, 1);
-    compensate_w = 8 * tan(s_yaw);
-    compensate_w *= 1000;
-    compensate_w =
-        (last_last_compensate_w + last_compensate_w + compensate_w) * 0.333;
-    last_last_compensate_w = last_compensate_w;
-    last_compensate_w = compensate_w;
+    double predict_time = depth * 0.001 * 98.331 + 23.871;
+    predict_time = predict_time / 1000;
+    double p_yaw        = atan2(predict_time * c_speed, depth * 0.001); // 预测出的近似弧度
+
+    compensate_w = p_yaw * 180 / CV_PI;
+
     return compensate_w;
   }
 

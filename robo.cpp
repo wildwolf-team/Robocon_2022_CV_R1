@@ -158,7 +158,6 @@ void RoboR1::detectionTask() {
   float depth{0};
   cv::Mat src_img;
   cv::Rect target_rect;
-  cv::Rect target_rect_predicted;
   cv::Rect target_rect_3d(0, 0, 150, 150);
   cv::Rect first_detect_region(camera_->getImageCols() / 4,
                                camera_->getImageRows() / 2,
@@ -225,23 +224,18 @@ void RoboR1::detectionTask() {
 
       // kalman 预测
       float kalman_yaw_compensate =
-        kalman_prediction_->Prediction(imu_yaw - detection_pnp_angle.y,
-                                       depth, 15.f);
-      target_rect_predicted = target_rect;
-      target_rect_predicted.x = target_rect.x - kalman_yaw_compensate;
-      pnp_->solvePnP(target_rect_3d, target_rect_predicted,
-                    target_pnp_angle, target_pnp_coordinate_mm,
-                    depth);
-      target_pnp_angle.y *= pnp_yaw_factor;
+        kalman_prediction_->Prediction(imu_yaw - detection_pnp_angle.y, depth);
+      vec.emplace_back(kalman_yaw_compensate); //0
+      target_pnp_angle = detection_pnp_angle;
+      target_pnp_angle.y -= kalman_yaw_compensate * 13;
 
       // 弹道补偿
-      float depth_m = depth / 1000;
-      float pitch_compensate = -0.0294f * float(pow(depth_m, 6)) +
-                                0.8118f * float(pow(depth_m, 5)) -
-                                9.2449f * float(pow(depth_m, 4)) +
-                                55.925f * float(pow(depth_m, 3)) -
-                                190.32f * float(pow(depth_m, 2)) +
-                                347.f * depth_m - 257.12f;
+      float depth_m = depth / 1000.f;
+      float pitch_compensate = 0.0132f * float(pow(depth_m, 4)) -
+                               0.2624f * float(pow(depth_m, 3)) +
+                               2.1572f * float(pow(depth_m, 2)) -
+                               7.3033f * depth_m + 17.783f;
+      detection_pnp_angle.x -= pitch_compensate;
       target_pnp_angle.x -= pitch_compensate;
     }
 
@@ -265,14 +259,14 @@ void RoboR1::detectionTask() {
     }
 
     if (debug_mode) {
-      vec.clear();
-      vec.emplace_back(target_pnp_angle.x);
-      vec.emplace_back(target_pnp_angle.y);
-      vec.emplace_back(imu_yaw);
-      vec.emplace_back(imu_yaw - detection_pnp_angle.y);
-      vec.emplace_back(detection_pnp_angle.y);
+      vec.emplace_back(target_pnp_angle.x); //1
+      vec.emplace_back(target_pnp_angle.y); //2
+      vec.emplace_back(imu_yaw); //3
+      vec.emplace_back(imu_yaw - detection_pnp_angle.y); //4
+      vec.emplace_back(detection_pnp_angle.y); //5
       detection_msg.data = vec;
       detection_info_pub->publish(detection_msg);
+      vec.clear();
     }
 
     if (!src_img.empty()) {
