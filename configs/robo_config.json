@@ -1,0 +1,6 @@
+{
+    "debug_mode": true,
+    "serial_port": "/dev/ttyACM0",
+    "camera_exposure_time": 6000,
+    "is_kalman_open": true
+}

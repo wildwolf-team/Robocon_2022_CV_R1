@@ -15,6 +15,8 @@ RoboR1::RoboR1() try {
   std::ifstream config_is(fmt::format("{}{}", CONFIG_FILE_PATH,
                   "/robo_config.json"));
   config_is >> config_json;
+  debug_mode = config_json["debug_mode"].get<bool>();
+
   n_ = rclcpp::Node::make_shared("robo_r1_node");
   yolo_detection_ = std::make_unique<YOLOv5TRT>(
     fmt::format("{}{}", SOURCE_PATH, "/models/ball.engine"));
