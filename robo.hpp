@@ -4,10 +4,6 @@
 #include <exception>
 #include <cmath>
 
-#include <rclcpp/rclcpp.hpp>
-#include "std_msgs/msg/float32.hpp"
-#include "std_msgs/msg/float32_multi_array.hpp"
-#include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #define FMT_HEADER_ONLY
 #include <fmt/color.h>
@@ -42,7 +38,6 @@ class RoboR1 {
 
   std::mutex mtx;
 
-  rclcpp::Node::SharedPtr n_;
   std::unique_ptr<RoboSerial> serial_;
   std::shared_ptr<mindvision::VideoCapture> camera_;
   std::unique_ptr<YOLOv5TRT> yolo_detection_;

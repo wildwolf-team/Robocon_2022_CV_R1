@@ -17,7 +17,6 @@ RoboR1::RoboR1() try {
   config_is >> config_json;
   debug_mode = config_json["debug_mode"].get<bool>();
 
-  n_ = rclcpp::Node::make_shared("robo_r1_node");
   yolo_detection_ = std::make_unique<YOLOv5TRT>(
     fmt::format("{}{}", SOURCE_PATH, "/models/ball.engine"));
   pnp_ = std::make_unique<solvepnp::PnP>(
@@ -60,7 +59,7 @@ void RoboR1::Spin() {
   std::thread uartReadThread(std::bind(&RoboR1::uartRead,this));
   std::thread detectionThread(std::bind(&RoboR1::detectionTask,this));
 
-  while (!end_node_ && rclcpp::ok()) {
+  while (!end_node_) {
     if (uartWriteThread.joinable())
       uartWriteThread.detach();
     if (uartReadThread.joinable())
@@ -88,7 +87,6 @@ void RoboR1::Spin() {
       serial_->close();
     if(streamer_->isRunning())
       streamer_->stop();
-    rclcpp::shutdown();
   } catch (const std::exception& e) {
     fmt::print("{}\n", e.what());
   }
@@ -194,18 +192,6 @@ void RoboR1::detectionTask() {
   cv::Point3f target_pnp_coordinate_mm;
   std::vector<myrobo::detection> pred;
 
-  auto detection_info_pub = n_->create_publisher
-    <std_msgs::msg::Float32MultiArray>(
-      "ptz/detection", rclcpp::QoS(rclcpp::KeepLast(50)));
-  std_msgs::msg::Float32MultiArray detection_msg;
-  std::vector<float> vec;
-  detection_msg.data = vec;
-
-  auto detection_img_pub = n_->create_publisher
-    <sensor_msgs::msg::CompressedImage>("ptz/img",
-      rclcpp::QoS(rclcpp::KeepLast(50)));
-  std_msgs::msg::Header header;
-
   ThreadPool pool(4);
 
   while (!end_node_) try {
@@ -251,7 +237,6 @@ void RoboR1::detectionTask() {
       // kalman 预测
       float kalman_yaw_compensate =
         kalman_prediction_->Prediction(imu_yaw - detection_pnp_angle.y, depth);
-      vec.emplace_back(kalman_yaw_compensate); //0
       target_pnp_angle = detection_pnp_angle;
       target_pnp_angle.y -= kalman_yaw_compensate * 13;
 
@@ -285,19 +270,12 @@ void RoboR1::detectionTask() {
     }
 
     if (debug_mode) {
-      vec.emplace_back(target_pnp_angle.x); //1
-      vec.emplace_back(target_pnp_angle.y); //2
-      vec.emplace_back(imu_yaw); //3
-      vec.emplace_back(imu_yaw - detection_pnp_angle.y); //4
-      vec.emplace_back(detection_pnp_angle.y); //5
-      detection_msg.data = vec;
-      detection_info_pub->publish(detection_msg);
-      vec.clear();
       debug_info_["imu_yaw"] = imu_yaw;
       debug_info_["imu_yaw-det_yaw"] = imu_yaw - detection_pnp_angle.y;
       debug_info_["det_yaw"] = detection_pnp_angle.y;
       debug_info_["tar_yaw"] = target_pnp_angle.y;
       pj_udp_cl_->send_message(debug_info_.dump());
+      debug_info_.empty();
     }
 
     if (!src_img.empty()) {
@@ -338,14 +316,6 @@ void RoboR1::detectionTask() {
                           buff_bgr.end()));
         streamer_->publish_text_value("yaw_angle", target_pnp_angle.y);
         streamer_->publish_text_value("pitch_angle", target_pnp_angle.x);
-
-        // ROS 图像显示
-        if(debug_mode) {
-          cv_bridge::CvImage cv_image(header, "bgr8", resize_src_img);
-          auto cv_image_ptr = cv_image.toCompressedImageMsg();
-          cv_image_ptr->header.stamp = n_->get_clock()->now();
-          detection_img_pub->publish(*cv_image_ptr);
-        }
       });
 
       // 击打指示

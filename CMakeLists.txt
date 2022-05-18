@@ -24,12 +24,6 @@ include_directories(
     ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} fmt::fmt ${EIGEN3_LIBS})
 
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(cv_bridge REQUIRED)
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs sensor_msgs cv_bridge)
-
 #Camera
 add_library(MVSDK SHARED IMPORTED)
 set(MIMDVISION_SDK_LIBRARY /lib/libMVSDK.so)
