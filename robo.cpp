@@ -33,6 +33,10 @@ RoboR1::RoboR1() try {
   serial_ = std::make_unique<RoboSerial>(
     config_json["serial_port"].get<std::string>(), 115200);
   streamer_ = std::make_unique<RoboStreamer>();
+  if(debug_mode)
+    pj_udp_cl_ = std::make_unique<UDPClient>(
+      config_json["pj_udp_cl_port"].get<int>(),
+      config_json["pj_udp_cl_ip"].get<std::string>());
 } catch (const std::exception &e) {
   fmt::print("[{}] {}\n", fmt::format(fg(fmt::color::red) |
               fmt::emphasis::bold, "construct"), e.what());
@@ -289,6 +293,11 @@ void RoboR1::detectionTask() {
       detection_msg.data = vec;
       detection_info_pub->publish(detection_msg);
       vec.clear();
+      debug_info_["imu_yaw"] = imu_yaw;
+      debug_info_["imu_yaw-det_yaw"] = imu_yaw - detection_pnp_angle.y;
+      debug_info_["det_yaw"] = detection_pnp_angle.y;
+      debug_info_["tar_yaw"] = target_pnp_angle.y;
+      pj_udp_cl_->send_message(debug_info_.dump());
     }
 
     if (!src_img.empty()) {

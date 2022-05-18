@@ -22,6 +22,7 @@
 #include "ThreadPool.h"
 #include "TensorRTx/yolov5.hpp"
 #include "utils/json.hpp"
+#include "utils/simple_cpp_sockets.hpp"
 
 namespace myrobo {
   struct ROSInfoPub;
@@ -33,6 +34,8 @@ class RoboR1 {
   bool end_node_{false};
   bool is_kalman_open_{true};
   bool debug_mode{true};
+
+  nlohmann::json debug_info_;
 
   RoboCmd robo_cmd;
   RoboInf robo_inf;
@@ -46,6 +49,7 @@ class RoboR1 {
   std::unique_ptr<solvepnp::PnP> pnp_;
   std::unique_ptr<KalmanPrediction> kalman_prediction_;
   std::unique_ptr<RoboStreamer> streamer_;
+  std::unique_ptr<UDPClient> pj_udp_cl_;
 
  public:
   RoboR1();
