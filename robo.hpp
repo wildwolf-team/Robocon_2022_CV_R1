@@ -13,10 +13,15 @@
 #include "angle/solvePnP/solvePnP.hpp"
 #include "devices/camera/mv_video_capture.hpp"
 #include "devices/new_serial/serial.hpp"
+#ifdef USE_OV_DETECTOR
+#include "OpenVINO/ovdetector.hpp"
+#endif
 #include "robo_data.h"
 #include "streamer/mjpeg_streamer.hpp"
 #include "ThreadPool.h"
-#include "TensorRTx/yolov5.hpp"
+#ifdef USE_TRT_DETECTOR
+#include "TensorRTx/trtdetector.hpp"
+#endif
 #include "utils/json.hpp"
 #include "utils/simple_cpp_sockets.hpp"
 
@@ -35,7 +40,15 @@ class RoboR1 {
 
   std::unique_ptr<RoboSerial> serial_;
   std::shared_ptr<mindvision::VideoCapture> camera_;
-  std::unique_ptr<YOLOv5TRT> yolo_detection_;
+
+#ifdef USE_TRT_DETECTOR
+  std::unique_ptr<TRTDetector> yolo_detection_;
+#endif
+
+#ifdef USE_OV_DETECTOR
+  std::unique_ptr<OVDetector> yolo_ov_detector_;
+#endif
+
   std::unique_ptr<solvepnp::PnP> pnp_;
   std::unique_ptr<KalmanPrediction> kalman_prediction_;
   std::unique_ptr<RoboStreamer> streamer_;
@@ -52,8 +65,6 @@ class RoboR1 {
   void streamerCallback(const nadjieb::net::HTTPRequest &req);
 
   void detectionTask();
-  void yoloDetectionCovert(std::vector<Yolo::Detection> &_res,
-    cv::Mat &_img, std::vector<myrobo::detection> &_pred);
   void targetFilter(const std::vector<myrobo::detection> &_pred,
     const cv::Rect &_region, cv::Rect &_target, bool &_is_lose);
   void storeRoboInfo(const cv::Point2f &_pnp_angle, const float &_depth,

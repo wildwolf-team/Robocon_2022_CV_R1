@@ -9,8 +9,19 @@ RoboR1::RoboR1() try {
   config_is >> config_json;
   debug_mode = config_json["debug_mode"].get<bool>();
 
-  yolo_detection_ = std::make_unique<YOLOv5TRT>(
+#ifdef USE_TRT_DETECTOR
+  yolo_detection_ = std::make_unique<TRTDetector>(
     fmt::format("{}{}", SOURCE_PATH, "/models/ball.engine"));
+#endif
+
+#ifdef USE_OV_DETECTOR
+  std::vector<std::string> labels{"red", "blue"};
+  yolo_ov_detector_ = std::make_unique<OVDetector>(
+    fmt::format("{}{}", SOURCE_PATH, "/models/ball.xml"),
+    0.7, 0.45, "CPU", labels);
+  yolo_ov_detector_->init();
+#endif
+
   pnp_ = std::make_unique<solvepnp::PnP>(
     fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_273.xml"),
     fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
@@ -192,8 +203,16 @@ void RoboR1::detectionTask() {
       imu_yaw = (robo_inf.yaw_angle.load() + imu_yaw) / 2;
       cv::Mat detect_roi_region = src_img(follow_detect_region);
       cv::Mat detect_roi_region_clone = detect_roi_region.clone();
-      auto res = yolo_detection_->Detect(detect_roi_region_clone);
-      yoloDetectionCovert(res, detect_roi_region_clone, pred);
+
+      pred.clear();
+
+#ifdef USE_TRT_DETECTOR
+      yolo_detection_->detect(detect_roi_region_clone, pred);
+#endif
+#ifndef USE_TRT_DETECTOR
+      yolo_ov_detector_->detect(detect_roi_region_clone, pred);
+#endif
+
       for(auto &i : pred) {
         i.rect.x += follow_detect_region.x;
         i.rect.y += follow_detect_region.y;
@@ -325,18 +344,6 @@ void RoboR1::detectionTask() {
     usleep(1);
   } catch (const std::exception &e) {
     fmt::print("{}\n", e.what());
-  }
-}
-
-void RoboR1::yoloDetectionCovert(std::vector<Yolo::Detection> &_res,
-  cv::Mat &_img, std::vector<myrobo::detection> &_pred) {
-  _pred.clear();
-  for(auto &i : _res) {
-    myrobo::detection dt;
-    dt.rect = get_rect(_img, i.bbox);
-    dt.class_id = i.class_id;
-    dt.conf = i.conf;
-    _pred.emplace_back(dt);
   }
 }
 

@@ -15,6 +15,14 @@ set(SRCS
     devices/serial/uart_serial.cpp)
 add_executable(${PROJECT_NAME} ${SRCS})
 
+find_package(InferenceEngine REQUIRED)
+if(InferenceEngine_FOUND)
+add_definitions(-DUSE_OV_DETECTOR)
+include_directories(${InferenceEngine_INCLUDE_DIRS})
+add_library(OpenVinoSRC OpenVINO/ovyolov5.cpp)
+target_link_libraries(${PROJECT_NAME} OpenVinoSRC ${InferenceEngine_LIBRARIES})
+endif(InferenceEngine_FOUND)
+
 find_package(OpenCV REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -44,8 +52,10 @@ add_library(new_serial ${serial_SRCS})
 target_link_libraries(${PROJECT_NAME} new_serial)
 
 #TensorRTx
-add_library(tensorrt TensorRTx/common.cpp)
 find_package(CUDA REQUIRED)
+if(CUDA_FOUND)
+add_definitions(-DUSE_TRT_DETECTOR)
+add_library(tensorrt TensorRTx/common.cpp)
 # cuda
 include_directories(/usr/local/cuda11.6/include)
 link_directories(/usr/local/cuda11.6/lib64)
@@ -57,6 +67,7 @@ target_link_libraries(myplugins nvinfer cudart)
 cuda_add_library(TensorRTx SHARED TensorRTx/calibrator.cpp TensorRTx/yolov5.hpp TensorRTx/preprocess.cu)
 target_link_libraries(TensorRTx nvinfer cudart myplugins ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} TensorRTx tensorrt)
+endif(CUDA_FOUND)
 
 set(CONFIG_FILE_PATH ${PROJECT_SOURCE_DIR}/configs)
 set(SOURCE_PATH ${PROJECT_SOURCE_DIR})
