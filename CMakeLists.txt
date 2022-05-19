@@ -42,7 +42,6 @@ target_link_libraries(${PROJECT_NAME} MVSDK)
 set(serial_SRCS
     devices/new_serial/src/serial.cc
     devices/new_serial/src/impl/unix.cc
-    devices/new_serial/src/impl/list_ports/list_ports_linux.cc
     devices/new_serial/serial/serial.h
     devices/new_serial/serial/v8stdint.h
     devices/new_serial/serial.cpp
