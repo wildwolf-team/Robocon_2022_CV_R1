@@ -20,11 +20,6 @@
 #include "utils/json.hpp"
 #include "utils/simple_cpp_sockets.hpp"
 
-namespace myrobo {
-  struct ROSInfoPub;
-  struct detection;
-}
-
 class RoboR1 {
  private:
   bool end_node_{false};

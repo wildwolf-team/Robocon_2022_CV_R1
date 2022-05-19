@@ -2,14 +2,6 @@
 
 using namespace std::chrono_literals;
 
-namespace myrobo {
-  struct detection {
-    cv::Rect rect;
-    float class_id;
-    float conf;
-  };
-}
-
 RoboR1::RoboR1() try {
   nlohmann::json config_json;
   std::ifstream config_is(fmt::format("{}{}", CONFIG_FILE_PATH,

@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <opencv2/opencv.hpp>
 
 struct RoboCmd {
   std::atomic<float> yaw_angle = 0.f;
@@ -37,3 +38,11 @@ struct RoboCatchBallUartBuff {
   uint8_t crc8x{0x00};
   uint8_t end = (unsigned)'E';
 } __attribute__((packed));
+
+namespace myrobo {
+  struct detection {
+    cv::Rect rect;
+    float class_id;
+    float conf;
+  };
+}
