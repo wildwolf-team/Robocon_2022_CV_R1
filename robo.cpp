@@ -261,15 +261,6 @@ void RoboR1::detectionTask() {
       storeRoboInfo(empty, 0.f, false);
     }
 
-    if (debug_mode) {
-      debug_info_["imu_yaw"] = imu_yaw;
-      debug_info_["imu_yaw-det_yaw"] = imu_yaw - detection_pnp_angle.y;
-      debug_info_["det_yaw"] = detection_pnp_angle.y;
-      debug_info_["tar_yaw"] = target_pnp_angle.y;
-      pj_udp_cl_->send_message(debug_info_.dump());
-      debug_info_.empty();
-    }
-
     if (!src_img.empty()) {
       // 准星
       cv::line(src_img, cv::Point(0, src_img.rows / 2),
@@ -296,7 +287,16 @@ void RoboR1::detectionTask() {
         cv::Point(target_rect.x, target_rect.y - 1),
         cv::FONT_HERSHEY_DUPLEX, 1.5, cv::Scalar(255, 0, 150));
 
-      pool.enqueue([=]() { 
+      pool.enqueue([=]() {
+        if (debug_mode) {
+          debug_info_["imu_yaw"] = imu_yaw;
+          debug_info_["imu_yaw-det_yaw"] = imu_yaw - detection_pnp_angle.y;
+          debug_info_["det_yaw"] = detection_pnp_angle.y;
+          debug_info_["tar_yaw"] = target_pnp_angle.y;
+          pj_udp_cl_->send_message(debug_info_.dump());
+          debug_info_.empty();
+        }
+
         cv::Mat resize_src_img;
         cv::resize(src_img, resize_src_img, cv::Size(320, 240));
 
