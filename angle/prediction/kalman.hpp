@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 
 template<int V_Z = 1, int V_X = 3>
 class Kalman {
