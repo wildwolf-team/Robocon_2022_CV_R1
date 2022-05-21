@@ -35,6 +35,7 @@ class RoboR1 {
 
   RoboCmd robo_cmd;
   RoboInf robo_inf;
+  nlohmann::json config_json;
 
   std::mutex mtx;
 

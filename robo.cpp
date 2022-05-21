@@ -3,11 +3,10 @@
 using namespace std::chrono_literals;
 
 RoboR1::RoboR1() try {
-  nlohmann::json config_json;
   std::ifstream config_is(fmt::format("{}{}", CONFIG_FILE_PATH,
                   "/robo_config.json"));
   config_is >> config_json;
-  debug_mode = config_json["debug_mode"].get<bool>();
+  config_json["debug_mode"].get_to<bool>(debug_mode);
 
 #ifdef USE_TRT_DETECTOR
   yolo_detection_ = std::make_unique<TRTDetector>(
