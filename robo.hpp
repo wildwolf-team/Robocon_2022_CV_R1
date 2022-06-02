@@ -47,7 +47,7 @@ class RoboR1 {
 #endif
 
 #ifdef USE_OV_DETECTOR
-  std::unique_ptr<OVDetector> yolo_ov_detector_;
+  std::unique_ptr<Detector> yolo_ov_detector_;
 #endif
 
   std::unique_ptr<solvepnp::PnP> pnp_;

@@ -1,22 +1,28 @@
 #pragma once
-#include "robo_data.h"
 #include "ovyolov5.h"
+#include "robo_data.h"
 
-class OVDetector : public Detector
-{
-private:
+class Detector : public OVDetector {
+ private:
+ public:
+  using OVDetector::OVDetector;
+  void detect(const cv::Mat &_img, std::vector<myrobo::detection> &_ds) {
+    std::vector<cv::Rect> origin_rect;
+    std::vector<float> origin_rect_cof;
+    std::vector<int> origin_rect_cls;
+    std::vector<int> indices_id;
 
-public:
-  using Detector::Detector;
-  void detect(Mat &_img, vector<myrobo::detection> &_ds) {
-    vector<Object> objs;
-    process_frame(_img, objs);
-    for(auto &i : objs) {
-      myrobo::detection d;
-      d.rect = i.rect;
-      d.class_id = i.id;
-      d.conf = i.prob;
-      _ds.emplace_back(d);
+    this->Infer(_img, origin_rect, origin_rect_cof, origin_rect_cls,
+                indices_id);
+
+    if(_ds.size() != 0) _ds.clear();
+
+    for(size_t i = 0; i < indices_id.size(); i++) {
+      myrobo::detection dt;
+      dt.rect = origin_rect[indices_id[i]];
+      dt.conf = origin_rect_cof[indices_id[i]];
+      dt.class_id = origin_rect_cls[indices_id[i]];
+      _ds.emplace_back(dt);
     }
   };
 };

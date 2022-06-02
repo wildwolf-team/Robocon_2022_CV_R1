@@ -14,11 +14,10 @@ RoboR1::RoboR1() try {
 #endif
 
 #ifdef USE_OV_DETECTOR
-  std::vector<std::string> labels{"red", "blue"};
-  yolo_ov_detector_ = std::make_unique<OVDetector>(
+  yolo_ov_detector_ = std::make_unique<Detector>(
     fmt::format("{}{}", SOURCE_PATH, "/models/ball.xml"),
-    0.7, 0.45, "CPU", labels);
-  yolo_ov_detector_->init();
+    2, 0.45f);
+  yolo_ov_detector_->Init();
 #endif
 
   pnp_ = std::make_unique<solvepnp::PnP>(
