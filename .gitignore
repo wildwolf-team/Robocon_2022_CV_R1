@@ -38,3 +38,8 @@ build
 *.engine
 *.pt
 *.onnx
+*.xml
+*.bin
+
+# vscode config
+.vscode
