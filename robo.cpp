@@ -175,7 +175,7 @@ void RoboR1::streamerCallback(const nadjieb::net::HTTPRequest &req) {
 }
 
 void RoboR1::detectionTask() {
-  float pnp_yaw_factor{1.f}; // pnp 修正倍率
+  float pnp_yaw_factor = config_json["pnp_yaw_factor"].get<float>(); // pnp 修正倍率
   float imu_yaw{0.f};
   bool is_lose{true};
   int lose_target_times{0};
@@ -264,18 +264,21 @@ void RoboR1::detectionTask() {
       is_lose = true;
     }
 
-    if(is_lose == false || (is_lose == true &&
-       lose_target_times++ < 5)) {
+    if(is_lose == false) {
       if(is_kalman_open_) {
         storeRoboInfo(target_pnp_angle, depth, true);
       } else {
         storeRoboInfo(detection_pnp_angle, depth, true);
       }
     } else {
-      cv::Point2f empty;
-      detection_pnp_angle = empty;
-      target_pnp_angle = empty;
-      storeRoboInfo(empty, 0.f, false);
+      if(lose_target_times++ < 5) {
+        storeRoboInfo(detection_pnp_angle, depth, true);
+      } else {
+        cv::Point2f empty;
+        detection_pnp_angle = empty;
+        target_pnp_angle = empty;
+        storeRoboInfo(empty, 0.f, false);
+      }
     }
 
     if (!src_img.empty()) {
@@ -329,12 +332,11 @@ void RoboR1::detectionTask() {
 
       // 击打指示
       if(is_lose == false &&
-         ((abs(detection_pnp_angle.y) < 1.f &&
-         abs(target_pnp_angle.y) < 1.f) ||
-         (detection_pnp_angle.y < -0.5f &&
-         target_pnp_angle.y > 0.5f) ||
-         (detection_pnp_angle.y > 0.5f &&
-         target_pnp_angle.y < -0.5f)))
+         ((abs(detection_pnp_angle.y) < 0.2f && abs(target_pnp_angle.y) < 0.2f) ||
+          (detection_pnp_angle.y < (target_pnp_angle.y - detection_pnp_angle.y) &&
+           target_pnp_angle.y < 1.f) ||
+          (detection_pnp_angle.y > (target_pnp_angle.y - detection_pnp_angle.y) &&
+           target_pnp_angle.y > -1.f)))
         streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", false);");
       else
         streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", true);");
