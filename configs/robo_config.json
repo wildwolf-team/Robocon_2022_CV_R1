@@ -2,7 +2,8 @@
     "debug_mode": true,
     "serial_port": "/dev/ttyACM0",
     "camera_exposure_time": 6000,
-    "is_kalman_open": true,
+    "is_kalman_open": false,
     "pj_udp_cl_ip": "127.0.0.1",
-    "pj_udp_cl_port": 9870
+    "pj_udp_cl_port": 9870,
+    "pnp_yaw_factor": 1.05
 }
