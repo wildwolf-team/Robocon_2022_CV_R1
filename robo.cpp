@@ -4,7 +4,7 @@ using namespace std::chrono_literals;
 
 RoboR1::RoboR1() try {
   std::ifstream config_is(fmt::format("{}{}", CONFIG_FILE_PATH,
-                  "/robo_config.json"));
+                          "/robo_config.json"));
   config_is >> config_json;
   config_json["debug_mode"].get_to<bool>(debug_mode);
 
@@ -25,11 +25,8 @@ RoboR1::RoboR1() try {
     fmt::format("{}{}", CONFIG_FILE_PATH, "/pnp_config.xml"));
   kalman_prediction_ = std::make_unique<KalmanPrediction>();
   is_kalman_open_ = config_json["is_kalman_open"].get<bool>();
-
-  int camera_exposure = config_json["camera_exposure_time"].get<int>();
-  mindvision::CameraParam camera_params(0, mindvision::RESOLUTION_1280_X_1024,
-                                          camera_exposure);
-  camera_ = std::make_shared<mindvision::VideoCapture>(camera_params);
+  camera_ = std::make_shared<mindvision::VideoCapture>(mindvision::RESOLUTION::RESOLUTION_1280_X_1024,
+    fmt::format("{}{}", CONFIG_FILE_PATH, "/camera_param.yaml"));
   serial_ = std::make_unique<RoboSerial>(
     config_json["serial_port"].get<std::string>(), 115200);
   streamer_ = std::make_unique<RoboStreamer>();
@@ -178,26 +175,28 @@ void RoboR1::detectionTask() {
   float pnp_yaw_factor = config_json["pnp_yaw_factor"].get<float>(); // pnp 修正倍率
   float imu_yaw{0.f};
   bool is_lose{true};
-  int lose_target_times{0};
+  // int lose_target_times{0};
   float depth{0};
   cv::Mat src_img;
   cv::Rect target_rect;
   cv::Rect target_rect_3d(0, 0, 150, 150);
-  cv::Rect first_detect_region(camera_->getImageCols() / 4,
-                               camera_->getImageRows() / 2,
-                               camera_->getImageCols() / 2,
-                               camera_->getImageRows() / 3);
+  cv::Rect first_detect_region(camera_->getImageCols() * 0.25,
+                               camera_->getImageRows() * 0.5,
+                               camera_->getImageCols() * 0.5,
+                               camera_->getImageRows() * 0.3);
   cv::Rect follow_detect_region(first_detect_region);
   cv::Point2f detection_pnp_angle;
   cv::Point2f target_pnp_angle;
   cv::Point3f target_pnp_coordinate_mm;
   std::vector<myrobo::detection> pred;
+  float pitch_compensate{0.f};
 
   ThreadPool pool(4);
 
   while (!end_node_) try {
     if(camera_->isOpen()) {
       *camera_ >> src_img;
+      // cv::rotate(src_img, src_img, cv::ROTATE_90_CLOCKWISE);
       imu_yaw = (robo_inf.yaw_angle.load() + imu_yaw) / 2;
       cv::Mat detect_roi_region = src_img(follow_detect_region);
       cv::Mat detect_roi_region_clone = detect_roi_region.clone();
@@ -223,7 +222,7 @@ void RoboR1::detectionTask() {
     }
 
     if(is_lose == false) {
-      lose_target_times = 0;
+      // lose_target_times = 0;
       follow_detect_region.x = target_rect.x + target_rect.width / 2
                               - follow_detect_region.width / 2;
       follow_detect_region.y = target_rect.y + target_rect.height / 2
@@ -250,11 +249,13 @@ void RoboR1::detectionTask() {
       target_pnp_angle.y -= kalman_yaw_compensate * 13;
 
       // 弹道补偿
-      float depth_m = depth / 1000.f;
-      float pitch_compensate = 0.0132f * float(pow(depth_m, 4)) -
+      // float depth_m = depth / 1000.f;
+      float depth_m = 8.1f;
+      pitch_compensate = 0.0132f * float(pow(depth_m, 4)) -
                                0.2624f * float(pow(depth_m, 3)) +
                                2.1572f * float(pow(depth_m, 2)) -
-                               7.3033f * depth_m + 17.783f;
+                               7.3033f * depth_m + 17.783f - 16.3f;
+
       detection_pnp_angle.x -= pitch_compensate;
       target_pnp_angle.x -= pitch_compensate;
     }
@@ -271,14 +272,14 @@ void RoboR1::detectionTask() {
         storeRoboInfo(detection_pnp_angle, depth, true);
       }
     } else {
-      if(lose_target_times++ < 5) {
-        storeRoboInfo(detection_pnp_angle, depth, true);
-      } else {
+      // if(lose_target_times++ < 5) {
+      //   storeRoboInfo(detection_pnp_angle, depth, true);
+      // } else {
         cv::Point2f empty;
         detection_pnp_angle = empty;
         target_pnp_angle = empty;
         storeRoboInfo(empty, 0.f, false);
-      }
+      // }
     }
 
     if (!src_img.empty()) {
@@ -318,7 +319,7 @@ void RoboR1::detectionTask() {
         }
 
         cv::Mat resize_src_img;
-        cv::resize(src_img, resize_src_img, cv::Size(320, 240));
+        cv::resize(src_img, resize_src_img, cv::Size(), 0.25, 0.25);
 
         // 网页图传
         std::vector<uchar> buff_bgr;
