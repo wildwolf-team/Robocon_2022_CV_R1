@@ -206,7 +206,7 @@ void RoboR1::detectionTask() {
 #ifdef USE_TRT_DETECTOR
       yolo_detection_->detect(detect_roi_region_clone, pred);
 #endif
-#ifndef USE_TRT_DETECTOR
+#ifdef USE_OV_DETECTOR
       yolo_ov_detector_->detect(detect_roi_region_clone, pred);
 #endif
 

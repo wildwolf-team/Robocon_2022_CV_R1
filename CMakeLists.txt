@@ -17,9 +17,9 @@ add_executable(${PROJECT_NAME} ${SRCS})
 find_package(OpenVINO QUIET)
 if(OpenVINO_FOUND)
     add_definitions(-DUSE_OV_DETECTOR)
-    include_directories(~/intel/openvino_2022/runtime/include)
-    include_directories(~/intel/openvino_2022/runtime/include/ie)
-    include_directories(~/intel/openvino_2022/runtime/include/ngraph)
+    include_directories($ENV{INTEL_OPENVINO_DIR}/runtime/include
+                        $ENV{INTEL_OPENVINO_DIR}/runtime/include/ie
+                        $ENV{INTEL_OPENVINO_DIR}/runtime/include/ngraph)
     add_library(OpenVinoSRC OpenVINO/ovyolov5.cpp)
     target_link_libraries(${PROJECT_NAME} OpenVinoSRC openvino::runtime)
 endif(OpenVINO_FOUND)
