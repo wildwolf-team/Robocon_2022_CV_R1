@@ -75,7 +75,7 @@ namespace solvepnp
                          rvec_,
                          tvec_,
                          false,
-                         cv::SOLVEPNP_SQPNP);
+                         cv::SOLVEPNP_ITERATIVE);
             float pitch_angle = 0.f;
             float yaw_angle = 0.f;
 

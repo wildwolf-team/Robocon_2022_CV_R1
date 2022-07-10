@@ -23,6 +23,7 @@ namespace mindvision {
 
 enum EXPOSURETIME {
   // 相机曝光时间
+  EXPOSURE_15000 = 15000,
   EXPOSURE_10000 = 10000,
   EXPOSURE_7500 = 7500,
   EXPOSURE_5000 = 5000,
@@ -37,14 +38,17 @@ enum RESOLUTION {
   // 相机分辨率
   RESOLUTION_1280_X_1024,
   RESOLUTION_1280_X_800,
-  RESOLUTION_640_X_480,
+  RESOLUTION_1280_X_768,
+  RESOLUTION_960_X_600,
+  RESOLUTION_640_X_384,
 };
 
 struct Camera_Resolution {
   int cols;
   int rows;
   // 设置相机分辨率
-  explicit Camera_Resolution(const mindvision::RESOLUTION _resolution) {
+  explicit Camera_Resolution(const mindvision::RESOLUTION _resolution =
+      RESOLUTION::RESOLUTION_1280_X_1024) {
     switch (_resolution) {
       case mindvision::RESOLUTION::RESOLUTION_1280_X_1024:
         cols = 1280;
@@ -54,9 +58,17 @@ struct Camera_Resolution {
         cols = 1280;
         rows = 800;
         break;
-      case mindvision::RESOLUTION::RESOLUTION_640_X_480:
+      case mindvision::RESOLUTION::RESOLUTION_1280_X_768:
+        cols = 1280;
+        rows = 768;
+        break;
+      case mindvision::RESOLUTION::RESOLUTION_960_X_600:
+        cols = 960;
+        rows = 600;
+        break;
+      case mindvision::RESOLUTION::RESOLUTION_640_X_384:
         cols = 640;
-        rows = 480;
+        rows = 384;
         break;
       default:
         cols = 1280;
@@ -67,27 +79,30 @@ struct Camera_Resolution {
 };
 
 struct CameraParam {
-  int camera_mode;
-  int camera_exposuretime;
+  int analog_gain;
+  int exposure_time;
+  int sharpen;
+  int gamma;
+  int contrast;
+  int red_gain;
+  int green_gain;
+  int blue_gain;
+  int saturation;
 
-  mindvision::Camera_Resolution resolution;
-
-  CameraParam(const int                      _camera_mode,
-              const mindvision::RESOLUTION   _resolution,
-              int _camera_exposuretime)
-    : camera_mode(_camera_mode),
-      camera_exposuretime(_camera_exposuretime),
-      resolution(_resolution) {}
+  Camera_Resolution resolution;
 };
 
 class VideoCapture {
  public:
   VideoCapture() = default;
-  explicit VideoCapture(const mindvision::CameraParam &_camera_param);
+  explicit VideoCapture(const RESOLUTION _resolution, 
+                        const std::string _config_path);
 
   ~VideoCapture();
 
   void operator>>(cv::Mat& img);
+
+  void readConfig();
 
   /**
    * @brief 判断工业相机是否在线
@@ -114,9 +129,9 @@ class VideoCapture {
 
   void setCameraOnceWB();
 
-  void setCameraColorGain(int iRGain, int iGGain, int iBGain);
+  void setCameraColorGain(int _iRGain, int _iGGain, int _iBGain);
 
-  void setCameraAnalogGrain(int iAnalogGain);
+  void setCameraAnalogGrain(int _iAnalogGain);
 
   void close();
 
@@ -126,13 +141,16 @@ class VideoCapture {
 
   int getImageRows();
 
+  cv::Size getImageSize();
+
+
  private:
   std::mutex mtx;
 
   unsigned char* g_pRgbBuffer;
 
-  int camera_exposuretime_ = 0;
-  mindvision::Camera_Resolution camera_resolution_;
+  std::string config_path_;
+  CameraParam camera_param_;
 
   int  hCamera;
   int  channel        = 3;

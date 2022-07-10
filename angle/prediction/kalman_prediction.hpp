@@ -16,11 +16,11 @@ class KalmanPrediction : public Kalman<1, S> {
     _Kalman::Matrix_zxd H;
     H(0, 0) = 1;
     _Kalman::Matrix_xxd R;
-    R(0, 0) = 10;
+    R(0, 0) = 0.1;
     for (int i = 1; i < S; i++) {
-      R(i, i) = 100;
+      R(i, i) = 0.01;
     }
-    _Kalman::Matrix_zzd Q{20};
+    _Kalman::Matrix_zzd Q{1};
     _Kalman::Matrix_x1d init{0, 0};
     this->reset(A, H, R, Q, init, 0);
     start = std::chrono::system_clock::now();
@@ -29,7 +29,7 @@ class KalmanPrediction : public Kalman<1, S> {
   float Prediction(double ptz_yaw_angle, float depth) {
     auto end = std::chrono::system_clock::now();
     m_yaw = ptz_yaw_angle;
-    if (std::fabs(last_yaw - m_yaw) > 5 ) {
+    if (std::fabs(last_yaw - m_yaw) > 7.5 ) {
       this->reset(m_yaw, std::chrono::duration_cast<std::chrono::milliseconds>(
                               end - start)
                               .count());
@@ -44,10 +44,10 @@ class KalmanPrediction : public Kalman<1, S> {
               .count());
     }
 
-    double c_yaw = state(0, 0); // yaw 滤波数值，单位弧度
+    // double c_yaw = state(0, 0); // yaw 滤波数值，单位弧度
     double c_speed = state(1, 0) * depth * 0.001; // 角速度 转 线速度 单位 m/s
-    c_speed = (c_speed + last_speed) * 0.5;
-    last_speed = c_speed;
+    // c_speed = (c_speed + last_speed) * 0.5;
+    // last_speed = c_speed;
     double predict_time = depth * 0.001 * 98.331 + 23.871;
     predict_time = predict_time / 1000;
     double p_yaw        = atan2(predict_time * c_speed, depth * 0.001); // 预测出的近似弧度
