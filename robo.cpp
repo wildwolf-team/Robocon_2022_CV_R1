@@ -178,92 +178,92 @@ void RoboR1::detectionTask() {
   // int lose_target_times{0};
   float depth{0};
   cv::Mat src_img;
-  cv::Rect target_rect;
   cv::Rect target_rect_3d(0, 0, 150, 150);
-  cv::Rect first_detect_region(camera_->getImageCols() * 0.25,
-                               camera_->getImageRows() * 0.5,
-                               camera_->getImageCols() * 0.5,
-                               camera_->getImageRows() * 0.3);
+  cv::Rect first_detect_region((camera_->getImageCols() - 600) * 0.5,
+                               (camera_->getImageRows() - 600) * 0.5,
+                               600,
+                               600);
   cv::Rect follow_detect_region(first_detect_region);
-  cv::Point2f detection_pnp_angle;
   cv::Point2f target_pnp_angle;
-  cv::Point3f target_pnp_coordinate_mm;
   std::vector<myrobo::detection> pred;
   float pitch_compensate{0.f};
 
   ThreadPool pool(4);
 
   while (!end_node_) try {
+    cv::Rect target_rect;
     if(camera_->isOpen()) {
       *camera_ >> src_img;
-      // cv::rotate(src_img, src_img, cv::ROTATE_90_CLOCKWISE);
+
       imu_yaw = (robo_inf.yaw_angle.load() + imu_yaw) / 2;
       cv::Mat detect_roi_region = src_img(follow_detect_region);
       cv::Mat detect_roi_region_clone = detect_roi_region.clone();
-
-      pred.clear();
 
 #ifdef USE_TRT_DETECTOR
       yolo_detection_->detect(detect_roi_region_clone, pred);
 #endif
 #ifdef USE_OV_DETECTOR
       yolo_ov_detector_->detect(detect_roi_region_clone, pred);
+      // yolo_ov_detector_->detect(src_img, pred);
 #endif
 
       for(auto &i : pred) {
         i.rect.x += follow_detect_region.x;
         i.rect.y += follow_detect_region.y;
       }
-      targetFilter(pred, follow_detect_region, target_rect, is_lose);
+      targetFilter(pred, target_rect, is_lose);
     } else {
       is_lose = true;
       camera_->open();
       std::this_thread::sleep_for(1000ms);
     }
 
+    cv::Point2f detection_pnp_angle;
+    cv::Point3f target_pnp_coordinate_mm;
+
     if(is_lose == false) {
       // lose_target_times = 0;
-      follow_detect_region.x = target_rect.x + target_rect.width / 2
-                              - follow_detect_region.width / 2;
-      follow_detect_region.y = target_rect.y + target_rect.height / 2
-                              - follow_detect_region.height / 2;
-      if(follow_detect_region.x < 0)
-        follow_detect_region.x = 0;
-      if(follow_detect_region.y < 0)
-        follow_detect_region.y = 0;
-      if(follow_detect_region.x + follow_detect_region.width > src_img.cols)
-        follow_detect_region.x = src_img.cols - follow_detect_region.width;
-      if(follow_detect_region.y + follow_detect_region.height > src_img.rows)
-        follow_detect_region.y = src_img.rows - follow_detect_region.height;
+      // follow_detect_region.x = target_rect.x + target_rect.width / 2
+      //                         - follow_detect_region.width / 2;
+      // follow_detect_region.y = target_rect.y + target_rect.height / 2
+      //                         - follow_detect_region.height / 2;
+      // if(follow_detect_region.x < 0)
+      //   follow_detect_region.x = 0;
+      // if(follow_detect_region.y < 0)
+      //   follow_detect_region.y = 0;
+      // if(follow_detect_region.x + follow_detect_region.width > src_img.cols)
+      //   follow_detect_region.x = src_img.cols - follow_detect_region.width;
+      // if(follow_detect_region.y + follow_detect_region.height > src_img.rows)
+      //   follow_detect_region.y = src_img.rows - follow_detect_region.height;
 
-      float detection_pnp_yaw_previous = detection_pnp_angle.y;
+      // float detection_pnp_yaw_previous = detection_pnp_angle.y;
       pnp_->solvePnP(target_rect_3d, target_rect, detection_pnp_angle,
                       target_pnp_coordinate_mm, depth);
       detection_pnp_angle.y *= pnp_yaw_factor;
-      detection_pnp_angle.y = (detection_pnp_yaw_previous + detection_pnp_angle.y) / 2;
+      // detection_pnp_angle.y = (detection_pnp_yaw_previous + detection_pnp_angle.y) / 2;
 
       // kalman 预测
-      float kalman_yaw_compensate =
-        kalman_prediction_->Prediction(imu_yaw - detection_pnp_angle.y, depth);
-      target_pnp_angle = detection_pnp_angle;
-      target_pnp_angle.y -= kalman_yaw_compensate * 13;
+      // float kalman_yaw_compensate =
+      //   kalman_prediction_->Prediction(imu_yaw - detection_pnp_angle.y, depth);
+      // target_pnp_angle = detection_pnp_angle;
+      // target_pnp_angle.y -= kalman_yaw_compensate * 13;
 
       // 弹道补偿
       // float depth_m = depth / 1000.f;
-      float depth_m = 8.1f;
-      pitch_compensate = 0.0132f * float(pow(depth_m, 4)) -
-                               0.2624f * float(pow(depth_m, 3)) +
-                               2.1572f * float(pow(depth_m, 2)) -
-                               7.3033f * depth_m + 17.783f - 16.3f;
+      // float depth_m = 8.1f;
+      // pitch_compensate = 0.0132f * float(pow(depth_m, 4)) -
+      //                          0.2624f * float(pow(depth_m, 3)) +
+      //                          2.1572f * float(pow(depth_m, 2)) -
+      //                          7.3033f * depth_m + 17.783f - 16.3f;
 
-      detection_pnp_angle.x -= pitch_compensate;
-      target_pnp_angle.x -= pitch_compensate;
+      // detection_pnp_angle.x -= pitch_compensate;
+      // target_pnp_angle.x -= pitch_compensate;
     }
 
-    if(!robo_inf.following.load()) {
-      follow_detect_region = first_detect_region;
-      is_lose = true;
-    }
+    // if(!robo_inf.following.load()) {
+    //   follow_detect_region = first_detect_region;
+    //   is_lose = true;
+    // }
 
     if(is_lose == false) {
       if(is_kalman_open_) {
@@ -283,21 +283,22 @@ void RoboR1::detectionTask() {
     }
 
     if (!src_img.empty()) {
+      cv::Scalar line;
+      if(!robo_inf.following.load())
+        line = cv::Scalar(0, 150, 255);
+      else
+        line = cv::Scalar(0, 0, 255);
       // 准星
       cv::line(src_img, cv::Point(0, src_img.rows / 2),
                cv::Point(src_img.cols, src_img.rows / 2),
-               cv::Scalar(0, 150, 255), 2);
+               line, 2);
       cv::line(src_img, cv::Point(src_img.cols / 2, 0),
                cv::Point(src_img.cols / 2, src_img.rows),
-               cv::Scalar(0, 150, 255), 2);
+               line, 2);
 
       // 搜索范围
-      if(!robo_inf.following.load())
-        cv::rectangle(src_img, follow_detect_region,
-                      cv::Scalar(0, 150, 255), 5);
-      else
-        cv::rectangle(src_img, follow_detect_region,
-                      cv::Scalar(0, 0, 255), 5);
+      cv::rectangle(src_img, follow_detect_region,
+                    line, 5);
 
       // 跟踪目标
       for(auto &i : pred) {
@@ -310,37 +311,38 @@ void RoboR1::detectionTask() {
 
       pool.enqueue([=]() {
         if (debug_mode) {
-          debug_info_["imu_yaw"] = imu_yaw;
-          debug_info_["imu_yaw-det_yaw"] = imu_yaw - detection_pnp_angle.y;
-          debug_info_["det_yaw"] = detection_pnp_angle.y;
-          debug_info_["tar_yaw"] = target_pnp_angle.y;
+          debug_info_["imu_yaw"] = robo_inf.yaw_angle.load();
+          debug_info_["imu_yaw-vision_yaw"] = robo_inf.yaw_angle.load() - robo_cmd.yaw_angle.load();
+          debug_info_["visoion_yaw"] = robo_cmd.yaw_angle.load();
+          debug_info_["vision_pitch"] = robo_cmd.pitch_angle.load();
+          debug_info_["is_lose"] = is_lose;
           pj_udp_cl_->send_message(debug_info_.dump());
           debug_info_.empty();
+
+          cv::Mat resize_src_img;
+          cv::resize(src_img, resize_src_img, cv::Size(), 0.25, 0.25);
+
+          // 网页图传
+          std::vector<uchar> buff_bgr;
+          cv::imencode(".jpg", resize_src_img, buff_bgr);
+          streamer_->publish("/pc",
+                            std::string(buff_bgr.begin(),
+                            buff_bgr.end()));
+          streamer_->publish_text_value("yaw_angle", robo_cmd.yaw_angle.load());
+          streamer_->publish_text_value("pitch_angle", robo_cmd.pitch_angle.load());
         }
-
-        cv::Mat resize_src_img;
-        cv::resize(src_img, resize_src_img, cv::Size(), 0.25, 0.25);
-
-        // 网页图传
-        std::vector<uchar> buff_bgr;
-        cv::imencode(".jpg", resize_src_img, buff_bgr);
-        streamer_->publish("/pc",
-                          std::string(buff_bgr.begin(),
-                          buff_bgr.end()));
-        streamer_->publish_text_value("yaw_angle", target_pnp_angle.y);
-        streamer_->publish_text_value("pitch_angle", target_pnp_angle.x);
       });
 
       // 击打指示
-      if(is_lose == false &&
-         ((abs(detection_pnp_angle.y) < 0.2f && abs(target_pnp_angle.y) < 0.2f) ||
-          (detection_pnp_angle.y < (target_pnp_angle.y - detection_pnp_angle.y) &&
-           target_pnp_angle.y < 1.f) ||
-          (detection_pnp_angle.y > (target_pnp_angle.y - detection_pnp_angle.y) &&
-           target_pnp_angle.y > -1.f)))
-        streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", false);");
-      else
-        streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", true);");
+      // if(is_lose == false &&
+      //    ((abs(detection_pnp_angle.y) < 0.2f && abs(target_pnp_angle.y) < 0.2f) ||
+      //     (detection_pnp_angle.y < (target_pnp_angle.y - detection_pnp_angle.y) &&
+      //      target_pnp_angle.y < 1.f) ||
+      //     (detection_pnp_angle.y > (target_pnp_angle.y - detection_pnp_angle.y) &&
+      //      target_pnp_angle.y > -1.f)))
+      //   streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", false);");
+      // else
+      //   streamer_->call_html_js_function("HardwareState(\"ready_to_shoot\", true);");
     }
     std::this_thread::sleep_for(1ms);
   } catch (const std::exception &e) {
@@ -348,29 +350,20 @@ void RoboR1::detectionTask() {
   }
 }
 
-void RoboR1::targetFilter(const std::vector<myrobo::detection> &_pred,
-  const cv::Rect &_region, cv::Rect &_target, bool &_is_lose) {
-  cv::Rect select_rect;
-  if(_pred.size() > 0)
-    select_rect = _pred[0].rect;
-  for(auto& i : _pred) {
-    if(i.conf < 0.3)
-      continue;
-    if(i.rect.width / i.rect.height > 1.2f ||
-       i.rect.width / i.rect.height < 0.8f)
-      continue;
-    if((pow(abs(i.rect.x - _region.x + _region.width / 2), 2) + 
-       pow(abs(i.rect.y - _region.y + _region.height / 2), 2)) <
-       (pow(abs(select_rect.x - _region.x + _region.width / 2), 2) + 
-       pow(abs(select_rect.y - _region.y + _region.height / 2), 2)))
-      select_rect = i.rect;
-  }
-  _target = select_rect;
-  select_rect.height = select_rect.width;
-  if(_target.width == 0)
-    _is_lose = true;
-  else
+void RoboR1::targetFilter(std::vector<myrobo::detection> &_pred,
+    cv::Rect &_target, bool &_is_lose) {
+  // cv::Rect select_rect;
+  if(_pred.size() > 0) {
+    std::sort(_pred.begin(), _pred.end(),
+      [](myrobo::detection _a, auto _b){return pow(_a.rect.x, 2) + pow(_a.rect.y, 2) < 
+        pow(_b.rect.x, 2) + pow(_b.rect.y, 2);});
+    _target = _pred[0].rect;
+    _target.height = _target.width;
     _is_lose = false;
+  } else {
+    _is_lose = true;
+  }
+  _pred.clear();
 }
 
 void RoboR1::storeRoboInfo(const cv::Point2f &_pnp_angle,

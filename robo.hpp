@@ -66,8 +66,8 @@ class RoboR1 {
   void streamerCallback(const nadjieb::net::HTTPRequest &req);
 
   void detectionTask();
-  void targetFilter(const std::vector<myrobo::detection> &_pred,
-    const cv::Rect &_region, cv::Rect &_target, bool &_is_lose);
+  void targetFilter(std::vector<myrobo::detection> &_pred,
+    cv::Rect &_target, bool &_is_lose);
   void storeRoboInfo(const cv::Point2f &_pnp_angle, const float &_depth,
     const bool &_detect_object);
 
